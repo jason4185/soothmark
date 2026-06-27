@@ -3,7 +3,7 @@ import type { Address } from "viem";
 
 export const SOOTHMARK_CONTRACT_ADDRESS =
   (process.env.NEXT_PUBLIC_SOOTHMARK_CONTRACT_ADDRESS?.trim() ||
-    "0x1839df28ac6595E4C941faB3BdB392a5aA5C0718") as Address;
+    "0x6754F03Eec491A6Fa99e5f58b3295613b6B5d9cd") as Address;
 
 export const GENLAYER_BRADBURY = {
   id: 4221,
