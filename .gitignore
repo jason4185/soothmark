@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.env
+.env.local
+.env.development.local
+.env.production.local
+*.pem
+*.key
+!.env.example
+.pnpm-store
+tsconfig.tsbuildinfo

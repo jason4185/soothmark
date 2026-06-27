@@ -1,0 +1,557 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #f7f1e6;
+    --background-soft: #efe3cf;
+    --surface: #ffffff;
+    --surface-soft: #fff9ef;
+    --surface-raised: #ffffff;
+    --border: #e2d3bc;
+    --border-strong: #cdb994;
+    --primary: #2563eb;
+    --primary-soft: #eaf1ff;
+    --primary-foreground: #ffffff;
+    --accent-cyan: #2563eb;
+    --accent-gold: #d8a545;
+    --accent-gold-soft: #fff4d8;
+    --accent-violet: #7c3aed;
+    --certified: #16a34a;
+    --certified-soft: #e8f8ee;
+    --conditional: #d97706;
+    --conditional-soft: #fff4de;
+    --rejected: #dc2626;
+    --rejected-soft: #feecec;
+    --text-main: #111827;
+    --text-muted: #6b6257;
+    --text-soft: #9ca3af;
+    --editor-background: #0b1020;
+    --editor-text: #f8fafc;
+    --editor-muted: #94a3b8;
+    --editor-border: #1f2937;
+    --card: var(--surface);
+    --card-foreground: var(--text-main);
+    --popover: var(--surface);
+    --popover-foreground: var(--text-main);
+    --secondary: var(--surface-soft);
+    --secondary-foreground: var(--text-main);
+    --muted: var(--surface-soft);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--primary-soft);
+    --accent-foreground: var(--text-main);
+    --destructive: var(--rejected);
+    --destructive-foreground: var(--text-main);
+    --input: var(--border);
+    --ring: var(--primary);
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: #11100d;
+    --background-soft: #181611;
+    --surface: #1c1a15;
+    --surface-soft: #242116;
+    --surface-raised: #211f19;
+    --border: #3a3327;
+    --border-strong: #5a4b35;
+    --primary: #7da2ff;
+    --primary-soft: #1d2a45;
+    --primary-foreground: #0b1020;
+    --accent-cyan: #7da2ff;
+    --accent-gold: #d8a545;
+    --accent-gold-soft: #332713;
+    --accent-violet: #a78bfa;
+    --certified: #22c55e;
+    --certified-soft: #102a1a;
+    --conditional: #f59e0b;
+    --conditional-soft: #33240b;
+    --rejected: #ef4444;
+    --rejected-soft: #351515;
+    --text-main: #f8fafc;
+    --text-muted: #b8b1a5;
+    --text-soft: #8f8779;
+    --editor-background: #0b1020;
+    --editor-text: #f8fafc;
+    --editor-muted: #94a3b8;
+    --editor-border: #1f2937;
+    --card: var(--surface);
+    --card-foreground: var(--text-main);
+    --popover: var(--surface);
+    --popover-foreground: var(--text-main);
+    --secondary: var(--surface-soft);
+    --secondary-foreground: var(--text-main);
+    --muted: var(--surface-soft);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--primary-soft);
+    --accent-foreground: var(--text-main);
+    --destructive: var(--rejected);
+    --destructive-foreground: var(--text-main);
+    --input: var(--border);
+    --ring: var(--primary);
+  }
+
+  html {
+    background: var(--background);
+    overflow-x: hidden;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: var(--background);
+    color: var(--text-main);
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
+    color: var(--text-main);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .validator-field {
+    background:
+      radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--surface) 72%, transparent), transparent 34rem),
+      linear-gradient(180deg, var(--background) 0%, var(--surface-soft) 46%, var(--background-soft) 100%);
+  }
+
+  .validator-base {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 16% 18%, color-mix(in srgb, var(--primary) 9%, transparent), transparent 26rem),
+      radial-gradient(circle at 86% 8%, color-mix(in srgb, var(--accent-gold) 8%, transparent), transparent 22rem),
+      radial-gradient(circle at 62% 90%, color-mix(in srgb, var(--accent-violet) 7%, transparent), transparent 28rem);
+  }
+
+  .validator-aurora {
+    position: absolute;
+    width: 58rem;
+    height: 30rem;
+    border-radius: 999px;
+    filter: blur(72px);
+    opacity: 0.16;
+    transform: translate3d(0, 0, 0) rotate(-12deg);
+    will-change: transform, opacity;
+  }
+
+  .validator-aurora-a {
+    top: -9rem;
+    left: -12rem;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 24%, transparent), color-mix(in srgb, var(--accent-gold) 13%, transparent), transparent);
+    animation: validator-aurora-a 24s ease-in-out infinite alternate;
+  }
+
+  .validator-aurora-b {
+    right: -16rem;
+    bottom: -12rem;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-violet) 16%, transparent), color-mix(in srgb, var(--primary) 12%, transparent));
+    animation: validator-aurora-b 30s ease-in-out infinite alternate;
+  }
+
+  .validator-signal {
+    position: absolute;
+    width: 65vw;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 16%, transparent), color-mix(in srgb, var(--accent-gold) 10%, transparent), transparent);
+    filter: blur(0.2px);
+    opacity: 0.14;
+    transform-origin: center;
+    will-change: transform, opacity;
+  }
+
+  .validator-signal-a {
+    top: 18%;
+    left: -22%;
+    transform: rotate(-18deg);
+    animation: validator-signal-a 22s linear infinite;
+  }
+
+  .validator-signal-b {
+    top: 58%;
+    right: -28%;
+    transform: rotate(16deg);
+    animation: validator-signal-b 28s linear infinite;
+  }
+
+  .validator-signal-c {
+    top: 82%;
+    left: -24%;
+    opacity: 0.14;
+    transform: rotate(-9deg);
+    animation: validator-signal-c 32s linear infinite;
+  }
+
+  .validator-nodes {
+    position: absolute;
+    inset: 0;
+  }
+
+  .validator-node {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary) 34%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 14%, transparent);
+    animation: validator-node-pulse 7s ease-in-out infinite;
+  }
+
+  .validator-noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.18;
+    mix-blend-mode: multiply;
+    background-image:
+      radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--text-main) 16%, transparent) 0 0.7px, transparent 0.8px),
+      radial-gradient(circle at 70% 60%, color-mix(in srgb, var(--accent-gold) 18%, transparent) 0 0.6px, transparent 0.7px);
+    background-size:
+      87px 91px,
+      113px 127px;
+  }
+
+  .dark .validator-noise {
+    opacity: 0.12;
+    mix-blend-mode: screen;
+  }
+
+  .hero-intelligence-bg {
+    position: absolute;
+    inset: -6rem -2rem;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 18% 24%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 30rem),
+      radial-gradient(circle at 76% 20%, color-mix(in srgb, var(--accent-gold) 10%, transparent), transparent 26rem),
+      radial-gradient(ellipse at 48% 58%, color-mix(in srgb, var(--accent-violet) 8%, transparent), transparent 32rem);
+    mask-image: radial-gradient(circle at center, black, transparent 72%);
+    animation: soothmark-glow 9s ease-in-out infinite alternate;
+  }
+
+  .hero-intelligence-bg::before {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background:
+      linear-gradient(115deg, transparent 0 34%, color-mix(in srgb, var(--primary) 7%, transparent) 34.2% 34.35%, transparent 34.55% 100%),
+      linear-gradient(115deg, transparent 0 58%, color-mix(in srgb, var(--accent-gold) 6%, transparent) 58.15% 58.28%, transparent 58.5% 100%);
+    opacity: 0.72;
+  }
+
+  .hero-intelligence-bg::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    opacity: 0.18;
+    mix-blend-mode: multiply;
+    background-image:
+      radial-gradient(circle at 18% 22%, color-mix(in srgb, var(--text-main) 18%, transparent) 0 0.55px, transparent 0.65px),
+      radial-gradient(circle at 72% 62%, color-mix(in srgb, var(--accent-gold) 16%, transparent) 0 0.5px, transparent 0.6px);
+    background-size:
+      74px 82px,
+      112px 126px;
+  }
+
+  .premium-card-glow {
+    box-shadow:
+      0 22px 64px color-mix(in srgb, var(--border-strong) 28%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--primary) 6%, transparent),
+      0 0 28px color-mix(in srgb, var(--primary) 7%, transparent);
+  }
+
+  .code-scan-line::after {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    content: "";
+    background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--primary) 18%, transparent), transparent);
+    transform: translateY(-100%);
+    animation: soothmark-scan 5.5s ease-in-out infinite;
+  }
+
+  .consensus-trace {
+    position: relative;
+  }
+
+  .consensus-trace::before {
+    position: absolute;
+    inset: 0.15rem;
+    pointer-events: none;
+    content: "";
+    border-radius: 0.42rem;
+    background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--primary) 7%, transparent) 38%, color-mix(in srgb, var(--primary) 34%, transparent) 50%, color-mix(in srgb, var(--accent-gold) 10%, transparent) 62%, transparent 100%);
+    filter: blur(0.2px);
+    transform: translateX(-120%);
+    animation: consensus-trace 5.8s ease-in-out infinite;
+  }
+
+  .consensus-trace::after {
+    position: absolute;
+    right: 1rem;
+    bottom: 0.5rem;
+    left: 1rem;
+    height: 1px;
+    pointer-events: none;
+    content: "";
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 32%, transparent), transparent);
+    opacity: 0.38;
+  }
+
+  .path-card-scan {
+    animation: path-card-scan 7.2s ease-in-out infinite;
+  }
+
+  .path-icon-scan {
+    animation: path-icon-scan 7.2s ease-in-out infinite;
+  }
+
+  .report-ready-dot {
+    animation: report-ready-pulse 2.4s ease-in-out infinite;
+  }
+
+  .soft-certified-pulse {
+    animation: certified-pulse 2.8s ease-in-out infinite;
+  }
+
+  .validation-gate-trail__trace {
+    opacity: 0;
+    transform: translateX(-42%);
+    animation: validation-gate-trace 4.4s ease-in-out infinite;
+  }
+
+  .blink-cursor::after {
+    display: inline-block;
+    width: 0.55ch;
+    margin-left: 0.15rem;
+    color: var(--accent-cyan);
+    content: "|";
+    animation: cursor-blink 1.25s steps(2, start) infinite;
+  }
+
+  @keyframes soothmark-glow {
+    from {
+      opacity: 0.72;
+      transform: translate3d(-0.5rem, 0, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0.5rem, -0.25rem, 0);
+    }
+  }
+
+  @keyframes validator-aurora-a {
+    from {
+      opacity: 0.1;
+      transform: translate3d(-2rem, 0, 0) rotate(-12deg);
+    }
+    to {
+      opacity: 0.18;
+      transform: translate3d(10rem, 3rem, 0) rotate(-4deg);
+    }
+  }
+
+  @keyframes validator-aurora-b {
+    from {
+      opacity: 0.08;
+      transform: translate3d(0, 0, 0) rotate(10deg);
+    }
+    to {
+      opacity: 0.16;
+      transform: translate3d(-12rem, -3rem, 0) rotate(2deg);
+    }
+  }
+
+  @keyframes validator-signal-a {
+    from {
+      transform: translateX(-18vw) rotate(-18deg);
+      opacity: 0;
+    }
+    18%,
+    70% {
+      opacity: 0.18;
+    }
+    to {
+      transform: translateX(142vw) rotate(-18deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes validator-signal-b {
+    from {
+      transform: translateX(18vw) rotate(16deg);
+      opacity: 0;
+    }
+    20%,
+    72% {
+      opacity: 0.14;
+    }
+    to {
+      transform: translateX(-142vw) rotate(16deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes validator-signal-c {
+    from {
+      transform: translateX(-22vw) rotate(-9deg);
+      opacity: 0;
+    }
+    18%,
+    64% {
+      opacity: 0.1;
+    }
+    to {
+      transform: translateX(132vw) rotate(-9deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes validator-node-pulse {
+    0%,
+    100% {
+      opacity: 0.28;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.68;
+      transform: scale(1.7);
+    }
+  }
+
+  @keyframes soothmark-scan {
+    0%,
+    38% {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    48% {
+      opacity: 1;
+    }
+    62%,
+    100% {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes consensus-trace {
+    0%,
+    28% {
+      opacity: 0;
+      transform: translateX(-120%);
+    }
+    42% {
+      opacity: 0.75;
+    }
+    68%,
+    100% {
+      opacity: 0;
+      transform: translateX(120%);
+    }
+  }
+
+  @keyframes path-card-scan {
+    0%,
+    100% {
+      border-color: color-mix(in srgb, var(--border) 85%, transparent);
+      box-shadow: 0 18px 50px color-mix(in srgb, var(--border-strong) 22%, transparent);
+    }
+    12%,
+    18% {
+      border-color: color-mix(in srgb, var(--primary) 32%, transparent);
+      box-shadow:
+        0 18px 50px color-mix(in srgb, var(--border-strong) 22%, transparent),
+        0 0 26px color-mix(in srgb, var(--primary) 12%, transparent);
+    }
+  }
+
+  @keyframes path-icon-scan {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 0 rgb(37 99 235 / 0));
+    }
+    12%,
+    18% {
+      filter: drop-shadow(0 0 10px color-mix(in srgb, var(--primary) 28%, transparent));
+    }
+  }
+
+  @keyframes report-ready-pulse {
+    0%,
+    100% {
+      opacity: 0.62;
+      box-shadow: 0 0 0 rgb(34 197 94 / 0);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 14px rgb(34 197 94 / 0.28);
+    }
+  }
+
+  @keyframes cursor-blink {
+    0%,
+    45% {
+      opacity: 1;
+    }
+    46%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes certified-pulse {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 0 rgb(34 197 94 / 0));
+    }
+    50% {
+      filter: drop-shadow(0 0 10px rgb(34 197 94 / 0.28));
+    }
+  }
+
+  @keyframes validation-gate-trace {
+    0%,
+    24% {
+      opacity: 0;
+      transform: translateX(-42%);
+    }
+    42% {
+      opacity: 0.8;
+    }
+    78%,
+    100% {
+      opacity: 0;
+      transform: translateX(42%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .validator-aurora,
+    .validator-signal,
+    .validator-node,
+    .hero-intelligence-bg,
+    .code-scan-line::after,
+    .consensus-trace::before,
+    .path-card-scan,
+    .path-icon-scan,
+    .report-ready-dot,
+    .soft-certified-pulse,
+    .validation-gate-trail__trace,
+    .blink-cursor::after {
+      animation: none;
+    }
+  }
+}
