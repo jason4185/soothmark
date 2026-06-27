@@ -2,7 +2,7 @@ import { createClient } from "genlayer-js";
 import { ExecutionResult, TransactionStatus, type CalldataEncodable, type TransactionHash } from "genlayer-js/types";
 import type { Address } from "viem";
 import { parseSoothmarkAudit, safeParseSoothmarkAudit } from "@/lib/auditSchema";
-import { soothmarkDebug, soothmarkError, soothmarkWarn } from "@/lib/debug";
+import { soothmarkDebug, soothmarkError, soothmarkTrace, soothmarkWarn } from "@/lib/debug";
 import { mockAuditOwners, mockAuditsById, mockCertifiedAudit, mockConditionalAudit, mockRejectedAudit } from "@/lib/mocks/audits";
 import { getSoothmarkChain, getSoothmarkTransactionExplorerUrl, requireSoothmarkContractAddress, soothmarkContractConfig } from "@/lib/soothmarkContractConfig";
 import type { SoothmarkAudit } from "@/types/audit";
@@ -332,6 +332,15 @@ function sortAuditIdsNewestFirst(auditIds: string[]) {
   });
 }
 
+function getAuditCountFromRaw(result: unknown): number {
+  const rawCount = unquoteString(coerceString(result));
+  const count = Number(rawCount);
+  if (rawCount === "" || !Number.isInteger(count) || count < 0) {
+    throw new Error(`Invalid Soothmark audit count response: ${safeStringify(result)}`);
+  }
+  return count;
+}
+
 export function isSoothmarkRateLimitError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   const lowerMessage = message.toLowerCase();
@@ -588,6 +597,10 @@ const realClient = {
     }
 
     const address = requireSoothmarkContractAddress();
+    soothmarkTrace("submit", "contract address", address);
+    soothmarkTrace("submit", "chain", soothmarkContractConfig.chainName);
+    soothmarkTrace("submit", "rpc endpoint", soothmarkContractConfig.endpoint);
+    soothmarkTrace("submit", "expected receipt status", soothmarkContractConfig.receiptStatus);
     const writeClient = await createWriteClient();
     const readClient = createReadClient();
     const provider = getBrowserWalletProvider();
@@ -595,16 +608,6 @@ const realClient = {
       throw new Error("Connect your wallet to submit an on-chain audit.");
     }
     const owner = await getConnectedWalletAddress(provider);
-    let previousCount = 0;
-    try {
-      previousCount = await realClient.getAuditCount();
-    } catch (error) {
-      if (isSoothmarkRateLimitError(error)) {
-        soothmarkWarn("Could not read pre-submit audit count because GenLayer RPC is rate-limiting reads. Continuing because audit_contract should return an audit ID.", error);
-      } else {
-        throw error;
-      }
-    }
 
     let submitResult: unknown;
     try {
@@ -626,11 +629,13 @@ const realClient = {
     }
 
     soothmarkDebug("[Soothmark submit] raw result:", submitResult);
+    soothmarkTrace("submit", "raw submit result", submitResult);
 
     let auditId = extractAuditIdFromSubmitValue(submitResult);
     const txHashText = extractTransactionHash(submitResult);
     if (txHashText !== "") {
       soothmarkDebug("[Soothmark tx] txHash:", txHashText);
+      soothmarkTrace("submit", "tx hash", txHashText);
       lastSubmissionMeta = {
         transactionHash: txHashText,
         explorerUrl: getSoothmarkTransactionExplorerUrl(txHashText),
@@ -647,17 +652,30 @@ const realClient = {
       assertReceiptSucceeded(receipt);
       auditId = extractAuditIdFromReceipt(receipt);
       soothmarkDebug("[Soothmark tx] accepted/confirmed");
+      soothmarkTrace("submit", "tx accepted", {
+        expectedReceiptStatus: soothmarkContractConfig.receiptStatus,
+        txExecutionResultName: receipt.txExecutionResultName,
+      });
     }
 
     if (auditId === "") {
       // Development fallback only: this assumes this transaction receives the next audit ID.
       // Production-safe flow should use the actual audit_contract return value or an emitted event.
-      auditId = String(previousCount);
-      soothmarkWarn("Using pre-submit audit count as the submitted audit ID fallback. This is unsafe for simultaneous submissions.", {
-        auditId,
-        previousCount,
-        owner,
-      });
+      try {
+        const fallbackCount = await realClient.getAuditCount();
+        auditId = String(Math.max(0, fallbackCount - 1));
+        soothmarkWarn("Using post-submit audit count as the submitted audit ID fallback. This is unsafe for simultaneous submissions.", {
+          auditId,
+          fallbackCount,
+          owner,
+        });
+      } catch (error) {
+        if (isSoothmarkRateLimitError(error)) {
+          soothmarkWarn("Could not read fallback audit count because GenLayer RPC is rate-limiting reads.", error);
+        } else {
+          throw error;
+        }
+      }
     }
 
     if (auditId === "") {
@@ -670,6 +688,7 @@ const realClient = {
     };
     soothmarkDebug("[Soothmark tx] auditId:", auditId);
     soothmarkDebug("[Soothmark submit] interpreted auditId:", auditId);
+    soothmarkTrace("submit", "resolved auditId", auditId);
     return auditId;
   },
 
@@ -691,8 +710,7 @@ const realClient = {
   async getAuditCount(): Promise<number> {
     try {
       const result = await readSoothmarkContract("get_audit_count", []);
-      const count = Number(coerceString(result));
-      const normalized = Number.isFinite(count) && count > 0 ? count : 0;
+      const normalized = getAuditCountFromRaw(result);
       logContractRead("get_audit_count", [], result, normalized);
       return normalized;
     } catch (error) {
@@ -773,52 +791,116 @@ const realClient = {
   },
 
   async getMyAudits(walletAddress: string): Promise<OwnedAudit[]> {
-    if (walletAddress.trim() === "") {
+    const normalizedWalletAddress = walletAddress.trim().toLowerCase();
+    if (normalizedWalletAddress === "") {
       return [];
     }
 
-    logDashboardRpc("[Dashboard RPC] getAuditIdsByOwner owner:", walletAddress);
-    const auditIds = sortAuditIdsNewestFirst(await this.getAuditIdsByOwner(walletAddress));
-    logDashboardRpc("[Soothmark dashboard] indexed auditIds:", auditIds);
+    logDashboardRpc("[Soothmark dashboard] wallet address", walletAddress);
+    soothmarkTrace("dashboard", "connected wallet", walletAddress);
+    soothmarkTrace("dashboard", "contract address", soothmarkContractConfig.address);
+    logDashboardRpc("[Soothmark dashboard] getAuditCount start");
+    soothmarkTrace("dashboard", "getAuditCount start");
+
+    let auditCount = 0;
+    try {
+      const countResult = await readSoothmarkContract("get_audit_count", []);
+      auditCount = getAuditCountFromRaw(countResult);
+      logContractRead("get_audit_count", [], countResult, auditCount);
+      logDashboardRpc("[Soothmark dashboard] getAuditCount result", auditCount);
+      soothmarkTrace("dashboard", "getAuditCount result", auditCount);
+    } catch (error) {
+      logDashboardRpc("[Soothmark dashboard] read failed", { method: "getAuditCount", error });
+      soothmarkTrace("dashboard", "read failed", { method: "getAuditCount", error });
+      throw error;
+    }
+
+    const auditIds = sortAuditIdsNewestFirst(
+      Array.from({ length: auditCount }, (_item, index) => String(index)),
+    );
+    soothmarkTrace("dashboard", "scanning id range", {
+      count: auditCount,
+      ids: auditIds,
+      from: auditCount > 0 ? "0" : null,
+      to: auditCount > 0 ? String(auditCount - 1) : null,
+    });
     const ownedAudits: OwnedAudit[] = [];
 
     for (const auditId of auditIds) {
-      logDashboardRpc("[Dashboard RPC] getAudit id:", auditId);
-      let audit: SoothmarkAudit | null = null;
+      if (!/^\d+$/.test(auditId)) {
+        logDashboardRpc("[Soothmark dashboard] skipped invalid auditId", auditId);
+        soothmarkTrace("dashboard", "read failed", { method: "auditIdValidation", auditId, error: "Invalid audit ID" });
+        continue;
+      }
+
+      logDashboardRpc("[Soothmark dashboard] getAuditOwner start", { auditId });
+      soothmarkTrace("dashboard", "getAuditOwner start", { auditId });
+      let owner = "";
       try {
-        audit = await this.getAudit(auditId);
+        const ownerResult = await readSoothmarkContract("get_audit_owner", [auditId]);
+        owner = unquoteString(coerceString(ownerResult));
+        logContractRead("get_audit_owner", [auditId], ownerResult, owner);
+        logDashboardRpc("[Soothmark dashboard] getAuditOwner result", { auditId, owner });
+        soothmarkTrace("dashboard", "getAuditOwner result", { auditId, owner });
       } catch (error) {
+        logDashboardRpc("[Soothmark dashboard] read failed", { method: "getAuditOwner", auditId, error });
+        soothmarkTrace("dashboard", "read failed", { method: "getAuditOwner", auditId, error });
         if (isSoothmarkRateLimitError(error)) {
-          logDashboardRpc("[Dashboard RPC] rate limited", { method: "getAudit", auditId, error });
+          throw error;
         }
-        throw error;
+        continue;
       }
-      if (audit) {
-        ownedAudits.push({ auditId, owner: walletAddress, audit });
+
+      const normalizedOwner = owner.trim().toLowerCase();
+      const ownerMatches = normalizedOwner !== "" && normalizedOwner === normalizedWalletAddress;
+      soothmarkTrace("dashboard", "owner match result", {
+        auditId,
+        owner,
+        walletAddress,
+        matched: ownerMatches,
+      });
+
+      if (!ownerMatches) {
+        if (auditId !== auditIds[auditIds.length - 1]) {
+          await delay(120);
+        }
+        continue;
       }
+
+      logDashboardRpc("[Soothmark dashboard] getAudit start", { auditId });
+      soothmarkTrace("dashboard", "getAudit start", { auditId });
+      try {
+        const auditResult = await readSoothmarkContract("get_audit", [auditId]);
+        soothmarkTrace("dashboard", "getAudit raw result", {
+          auditId,
+          raw: auditResult,
+        });
+        const audit = normalizeAuditResponse(auditResult, auditId);
+        logContractRead("get_audit", [auditId], auditResult, audit);
+        soothmarkTrace("dashboard", "getAudit debug result", {
+          auditId,
+          debug: getLastSoothmarkAuditResponseDebug(auditId),
+        });
+        soothmarkTrace("dashboard", "normalized dashboard audit", {
+          auditId,
+          loaded: Boolean(audit),
+          audit,
+        });
+        logDashboardRpc("[Soothmark dashboard] getAudit result", { auditId, loaded: Boolean(audit) });
+        if (audit) {
+          ownedAudits.push({ auditId, owner, audit });
+        }
+      } catch (error) {
+        logDashboardRpc("[Soothmark dashboard] read failed", { method: "getAudit", auditId, error });
+        soothmarkTrace("dashboard", "read failed", { method: "getAudit", auditId, error });
+        if (isSoothmarkRateLimitError(error)) {
+          throw error;
+        }
+      }
+
       if (auditId !== auditIds[auditIds.length - 1]) {
         await delay(120);
       }
-    }
-
-    if (ownedAudits.length === 0 && soothmarkContractConfig.enableGlobalAuditScan) {
-      logDashboardRpc("[Dashboard RPC] global scan fallback enabled");
-      const count = await this.getAuditCount();
-      const fallbackAudits: OwnedAudit[] = [];
-      for (let index = count - 1; index >= 0; index -= 1) {
-        const auditId = String(index);
-        const owner = await this.getAuditOwner(auditId);
-        if (owner !== "" && owner.toLowerCase() === walletAddress.toLowerCase()) {
-          const audit = await this.getAudit(auditId);
-          if (audit) {
-            fallbackAudits.push({ auditId, owner, audit });
-          }
-        }
-        if (index > 0) {
-          await delay(120);
-        }
-      }
-      return fallbackAudits;
     }
 
     return ownedAudits;

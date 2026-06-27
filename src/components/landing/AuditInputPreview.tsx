@@ -13,7 +13,7 @@ import { AuditResultSummary } from "@/components/audit/AuditResultSummary";
 import { GradientButton } from "@/components/shared/GradientButton";
 import { SectionShell } from "@/components/shared/SectionShell";
 import { Button } from "@/components/ui/button";
-import { soothmarkDebug } from "@/lib/debug";
+import { soothmarkDebug, soothmarkTrace } from "@/lib/debug";
 import { getExampleById } from "@/lib/mocks/examples";
 import { getLastSoothmarkAuditResponseDebug, getLastSoothmarkSubmissionMeta, isSoothmarkRateLimitError, soothmarkClient } from "@/lib/soothmarkClient";
 import { soothmarkContractConfig } from "@/lib/soothmarkContractConfig";
@@ -23,11 +23,7 @@ import { useWalletIdentity } from "@/lib/wallet/useWalletIdentity";
 const progressStepCount = 4;
 const reportPollTimeoutMs = 5 * 60 * 1000;
 const rateLimitRetryDelayMs = 45_000;
-const legacyActiveSubmissionStorageKey = "soothmark.activeAuditSubmission";
-
-function getActiveSubmissionStorageKey() {
-  return `soothmark.activeAuditSubmission.${soothmarkContractConfig.address.toLowerCase()}`;
-}
+const preSubmitCountTimeoutMs = 3_000;
 
 type ActiveAuditStatus = "submitting" | "confirmed" | "polling" | "ready" | "timeout" | "error";
 
@@ -53,82 +49,6 @@ function createSubmissionId() {
 
 function normalizeWalletAddress(address: string | null | undefined) {
   return address?.toLowerCase() ?? "";
-}
-
-function readActiveSubmission(currentWalletAddress?: string | null): ActiveAuditSubmission | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const stored = window.sessionStorage.getItem(getActiveSubmissionStorageKey());
-    if (!stored) {
-      return null;
-    }
-
-    const parsed = JSON.parse(stored) as Partial<ActiveAuditSubmission>;
-    if (typeof parsed.submissionId !== "string" || typeof parsed.preSubmitAuditCount !== "number" || typeof parsed.startedAt !== "number") {
-      return null;
-    }
-    const storedWalletAddress = typeof parsed.walletAddress === "string" ? parsed.walletAddress : undefined;
-    const normalizedCurrentAddress = normalizeWalletAddress(currentWalletAddress);
-    const normalizedStoredAddress = normalizeWalletAddress(storedWalletAddress);
-    if (normalizedCurrentAddress && normalizedStoredAddress && normalizedCurrentAddress !== normalizedStoredAddress) {
-      soothmarkDebug("[Soothmark result] hidden because owner mismatch:", {
-        storedWalletAddress,
-        currentWalletAddress,
-      });
-      clearActiveSubmission();
-      return null;
-    }
-    if (normalizedCurrentAddress && !normalizedStoredAddress) {
-      clearActiveSubmission();
-      return null;
-    }
-
-    return {
-      submissionId: parsed.submissionId,
-      preSubmitAuditCount: parsed.preSubmitAuditCount,
-      auditId: typeof parsed.auditId === "string" ? parsed.auditId : undefined,
-      walletAddress: storedWalletAddress,
-      transactionHash: typeof parsed.transactionHash === "string" ? parsed.transactionHash : undefined,
-      explorerUrl: typeof parsed.explorerUrl === "string" ? parsed.explorerUrl : undefined,
-      status: parsed.status ?? "polling",
-      startedAt: parsed.startedAt,
-    };
-  } catch (error) {
-    soothmarkDebug("Could not read persisted Soothmark audit submission.", error);
-    return null;
-  }
-}
-
-function writeActiveSubmission(submission: ActiveAuditSubmission) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.sessionStorage.removeItem(legacyActiveSubmissionStorageKey);
-    window.sessionStorage.setItem(getActiveSubmissionStorageKey(), JSON.stringify(submission));
-  } catch (error) {
-    soothmarkDebug("Could not persist Soothmark audit submission.", error);
-  }
-}
-
-function updateActiveSubmissionStatus(status: ActiveAuditStatus) {
-  const activeSubmission = readActiveSubmission();
-  if (activeSubmission) {
-    writeActiveSubmission({ ...activeSubmission, status });
-  }
-}
-
-function clearActiveSubmission() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.sessionStorage.removeItem(legacyActiveSubmissionStorageKey);
-  window.sessionStorage.removeItem(getActiveSubmissionStorageKey());
 }
 
 function auditErrorMessage(caughtError: unknown): string {
@@ -173,6 +93,20 @@ function getAuditPollingDelayMs(attempt: number, startedAt: number, wasRateLimit
     return 10_000;
   }
   return attempt < 5 ? 10_000 : 20_000;
+}
+
+async function readPreSubmitAuditCountForNewSubmit(): Promise<number | null> {
+  try {
+    return await Promise.race<number | null>([
+      soothmarkClient.getAuditCount(),
+      new Promise((resolve) => {
+        window.setTimeout(() => resolve(null), preSubmitCountTimeoutMs);
+      }),
+    ]);
+  } catch (error) {
+    soothmarkTrace("submit", "pre-submit audit count unavailable", error);
+    return null;
+  }
 }
 
 export function AuditInputPreview() {
@@ -227,44 +161,6 @@ export function AuditInputPreview() {
   }, [isAuditing]);
 
   useEffect(() => {
-    if (soothmarkContractConfig.useMocks) {
-      return;
-    }
-
-    const activeSubmission = readActiveSubmission(wallet.address);
-    if (!activeSubmission || activeSubmission.status === "error") {
-      return;
-    }
-
-    soothmarkDebug("[Soothmark polling] restarting after remount for auditId:", activeSubmission.auditId ?? "(unresolved)");
-    auditRunRef.current += 1;
-    const runId = auditRunRef.current;
-    activeSubmissionRef.current = activeSubmission;
-    activeAuditIdRef.current = activeSubmission.auditId ?? "";
-    auditStartedAtRef.current = activeSubmission.startedAt;
-    setAuditId(activeSubmission.auditId ?? "");
-    setTransactionExplorerUrl(activeSubmission.explorerUrl ?? "");
-    setResult(null);
-    setError("");
-    setPendingMessage("Audit submitted. Waiting for GenLayer consensus...");
-    setIsFinalizingTimeout(activeSubmission.status === "timeout");
-    setCurrentStep(activeSubmission.status === "timeout" ? progressStepCount - 1 : 2);
-    setElapsedSeconds(Math.max(0, Math.floor((Date.now() - activeSubmission.startedAt) / 1000)));
-    setIsAuditing(activeSubmission.status !== "timeout" && activeSubmission.status !== "ready");
-
-    if (activeSubmission.status === "timeout") {
-      return;
-    }
-
-    if (activeSubmission.status === "ready") {
-      void resolveAndApplySubmittedAudit(activeSubmission, "auto");
-      return;
-    }
-
-    startSubmittedAuditPolling(activeSubmission, runId);
-  }, [wallet.address]);
-
-  useEffect(() => {
     const currentAddress = normalizeWalletAddress(wallet.address);
     const previousAddress = previousWalletAddressRef.current;
     if (previousAddress === undefined) {
@@ -276,7 +172,7 @@ export function AuditInputPreview() {
       return;
     }
 
-    const activeSubmission = readActiveSubmission();
+    const activeSubmission = activeSubmissionRef.current;
     const storedAddress = normalizeWalletAddress(activeSubmission?.walletAddress);
     previousWalletAddressRef.current = currentAddress;
 
@@ -291,7 +187,6 @@ export function AuditInputPreview() {
     soothmarkDebug("[Soothmark polling] stopped because:", "wallet_changed");
 
     clearTimers("wallet_changed");
-    clearActiveSubmission();
     auditRunRef.current += 1;
     activeAuditIdRef.current = "";
     activeSubmissionRef.current = null;
@@ -316,7 +211,7 @@ export function AuditInputPreview() {
 
     const example = getExampleById(exampleId);
     if (example) {
-      const activeSubmission = readActiveSubmission(wallet.address);
+      const activeSubmission = activeSubmissionRef.current;
       if (activeSubmission && activeSubmission.status !== "ready" && activeSubmission.status !== "error") {
         return;
       }
@@ -341,12 +236,12 @@ export function AuditInputPreview() {
       resultPollTimerRef.current = null;
       soothmarkDebug("[Soothmark auto] stopped polling because:", reason);
       soothmarkDebug("[Soothmark flow] polling stopped reason:", reason);
+      soothmarkTrace("polling", "stop reason", reason);
     }
   }
 
   function resetAuditDisplay() {
     clearTimers("user_reset");
-    clearActiveSubmission();
     auditRunRef.current += 1;
     setResult(null);
     setAuditId("");
@@ -386,6 +281,7 @@ export function AuditInputPreview() {
     soothmarkDebug("[Soothmark submit] submissionId:", submission.submissionId);
     soothmarkDebug("[Soothmark submit] walletAtSubmit:", submission.walletAddress);
     soothmarkDebug("[Soothmark submit] preSubmitAuditCount:", submission.preSubmitAuditCount);
+    soothmarkTrace("polling", "active auditId", submission.auditId ?? "(unresolved)");
 
     const walletAtSubmit = normalizeWalletAddress(submission.walletAddress);
     if (!walletAtSubmit) {
@@ -410,6 +306,11 @@ export function AuditInputPreview() {
 
     soothmarkDebug("[Soothmark resolve] currentAuditCount:", currentAuditCount);
     if (currentAuditCount <= submission.preSubmitAuditCount) {
+      soothmarkTrace("polling", "not ready yet", {
+        reason: "audit_count_not_advanced",
+        currentAuditCount,
+        preSubmitAuditCount: submission.preSubmitAuditCount,
+      });
       setPendingMessage("Soothmark is checking the contract for your new audit record.");
       return null;
     }
@@ -464,9 +365,18 @@ export function AuditInputPreview() {
 
       let audit: SoothmarkAudit | null = null;
       try {
+        soothmarkTrace("polling", "getAudit start", { auditId: candidateId, source });
         audit = await soothmarkClient.getAudit(candidateId);
         soothmarkDebug("[Soothmark flow] getAudit raw result:", getLastSoothmarkAuditResponseDebug(candidateId));
         soothmarkDebug("[Soothmark flow] normalized audit:", audit);
+        soothmarkTrace("polling", "getAudit raw result", {
+          auditId: candidateId,
+          raw: getLastSoothmarkAuditResponseDebug(candidateId),
+        });
+        soothmarkTrace("polling", "normalized audit", {
+          auditId: candidateId,
+          audit,
+        });
         lastReadWasRateLimitedRef.current = false;
       } catch (caughtError) {
         if (isSoothmarkRateLimitError(caughtError)) {
@@ -483,15 +393,17 @@ export function AuditInputPreview() {
       const rawDebug = getLastSoothmarkAuditResponseDebug(candidateId);
       if (audit) {
         soothmarkDebug("[Soothmark resolve] loaded matching auditId:", candidateId);
+        soothmarkTrace("polling", "audit loaded", { auditId: candidateId, source });
         return { auditId: candidateId, audit };
       }
+      soothmarkTrace("polling", "not ready yet", { auditId: candidateId, source, rawDebug });
       if (rawDebug?.jsonParseFailed || rawDebug?.schemaValidationFailed) {
         const message = rawDebug.jsonParseFailed
           ? "Audit report was returned, but could not be parsed."
           : "Audit report does not match the expected Soothmark schema.";
         soothmarkDebug("[Soothmark error] reason:", message);
         soothmarkDebug("[Soothmark error] raw:", rawDebug);
-        updateActiveSubmissionStatus("error");
+        activeSubmissionRef.current = { ...submission, status: "error" };
         setError(message);
         setPendingMessage("");
         setIsAuditing(false);
@@ -515,7 +427,6 @@ export function AuditInputPreview() {
     soothmarkDebug("[Soothmark resolved] source:", source);
     const readySubmission = { ...submission, auditId: resolved.auditId, status: "ready" as const };
     activeSubmissionRef.current = readySubmission;
-    writeActiveSubmission(readySubmission);
     activeAuditIdRef.current = resolved.auditId;
     setAuditId(resolved.auditId);
     setResult(resolved.audit);
@@ -526,6 +437,7 @@ export function AuditInputPreview() {
     setElapsedSeconds(0);
     setIsAuditing(false);
     soothmarkDebug("[Soothmark flow] audit loaded into UI", { auditId: resolved.auditId, source });
+    soothmarkTrace("polling", "audit loaded", { auditId: resolved.auditId, source });
     if (source === "auto") {
       soothmarkDebug("[Soothmark polling] audit loaded automatically");
     }
@@ -556,11 +468,12 @@ export function AuditInputPreview() {
 
     soothmarkDebug("[Soothmark auto] tx accepted, starting resolver");
     soothmarkDebug("[Soothmark polling] started for auditId:", submission.auditId ?? "(unresolved)");
+    soothmarkTrace("polling", "active auditId", submission.auditId ?? "(unresolved)");
     soothmarkDebug("[Soothmark flow] polling started", {
       auditId: submission.auditId ?? "(unresolved)",
       submissionId: submission.submissionId,
     });
-    updateActiveSubmissionStatus("polling");
+    activeSubmissionRef.current = { ...submission, status: "polling" };
     setPendingMessage("Transaction accepted. Soothmark is looking for the new audit report owned by your wallet.");
 
     const startedAt = auditStartedAtRef.current ?? Date.now();
@@ -583,6 +496,7 @@ export function AuditInputPreview() {
       }
 
       soothmarkDebug("[Soothmark auto] resolver tick", { attempt: attempt + 1, submissionId: activeSubmission.submissionId });
+      soothmarkTrace("polling", "active auditId", activeSubmission.auditId ?? "(unresolved)");
 
       try {
         const didLoad = await resolveAndApplySubmittedAudit(activeSubmission, "auto");
@@ -601,7 +515,7 @@ export function AuditInputPreview() {
           const message = auditErrorMessage(caughtError);
           soothmarkDebug("[Soothmark error] reason:", message);
           soothmarkDebug("[Soothmark error] raw:", caughtError);
-          updateActiveSubmissionStatus("error");
+          activeSubmissionRef.current = { ...activeSubmission, status: "error" };
           setPendingMessage("");
           setError(message);
           setIsAuditing(false);
@@ -616,7 +530,7 @@ export function AuditInputPreview() {
         soothmarkDebug("[Soothmark auto] stopped polling because:", "timeout");
         soothmarkDebug("[Soothmark error] reason:", message);
         soothmarkDebug("[Soothmark error] raw:", debug);
-        updateActiveSubmissionStatus("timeout");
+        activeSubmissionRef.current = { ...activeSubmission, status: "timeout" };
         setIsFinalizingTimeout(true);
         setPendingMessage("");
         setError(message);
@@ -640,7 +554,7 @@ export function AuditInputPreview() {
   async function refreshStatus() {
     setIsRefreshingStatus(true);
     try {
-      const activeSubmission = activeSubmissionRef.current ?? readActiveSubmission(wallet.address);
+      const activeSubmission = activeSubmissionRef.current;
       if (activeSubmission) {
         activeSubmissionRef.current = activeSubmission;
         const didLoad = await resolveAndApplySubmittedAudit(activeSubmission, "manual");
@@ -695,6 +609,11 @@ export function AuditInputPreview() {
       return;
     }
 
+    soothmarkTrace("submit", "active submission cleared before new submit", {
+      contractAddress: soothmarkContractConfig.address,
+      chainName: soothmarkContractConfig.chainName,
+      walletAddress: wallet.address,
+    });
     clearTimers("new_submission_started");
     auditRunRef.current += 1;
     const runId = auditRunRef.current;
@@ -724,15 +643,20 @@ export function AuditInputPreview() {
         );
       });
     } else {
-      setPendingMessage("Submitting audit transaction...");
+      setPendingMessage("Preparing audit submission...");
     }
 
     try {
-      const preSubmitAuditCount = soothmarkContractConfig.useMocks ? 0 : await soothmarkClient.getAuditCount();
+      const preSubmitAuditCount = soothmarkContractConfig.useMocks ? 0 : await readPreSubmitAuditCountForNewSubmit();
       soothmarkDebug("[Soothmark submit] submissionId:", submissionId);
       soothmarkDebug("[Soothmark submit] walletAtSubmit:", walletAtSubmit);
       soothmarkDebug("[Soothmark submit] preSubmitAuditCount:", preSubmitAuditCount);
+      setPendingMessage("Submitting audit transaction...");
+      soothmarkTrace("submit", "new submit started", { submissionId, walletAtSubmit, preSubmitAuditCount });
+      soothmarkTrace("submit", "wallet transaction request started", { submissionId });
       const nextAuditId = await soothmarkClient.submitAudit(contractCode);
+      const numericNextAuditId = Number(nextAuditId);
+      const submissionLowerBound = preSubmitAuditCount ?? (Number.isInteger(numericNextAuditId) && numericNextAuditId >= 0 ? numericNextAuditId : 0);
       const submissionMeta = getLastSoothmarkSubmissionMeta(nextAuditId);
       const explorerUrl = submissionMeta?.explorerUrl ?? "";
       soothmarkDebug("[Soothmark submit] txHash:", submissionMeta?.transactionHash);
@@ -752,7 +676,7 @@ export function AuditInputPreview() {
       setTransactionExplorerUrl(explorerUrl);
       const activeSubmission: ActiveAuditSubmission = {
         submissionId,
-        preSubmitAuditCount,
+        preSubmitAuditCount: submissionLowerBound,
         auditId: nextAuditId,
         walletAddress: walletAtSubmit,
         transactionHash: submissionMeta?.transactionHash,
@@ -761,7 +685,7 @@ export function AuditInputPreview() {
         startedAt: auditStartedAtRef.current ?? Date.now(),
       };
       activeSubmissionRef.current = activeSubmission;
-      writeActiveSubmission(activeSubmission);
+      soothmarkTrace("submit", "active submission started in memory", activeSubmission);
       soothmarkDebug("[Soothmark tx] auditId:", nextAuditId);
       soothmarkDebug("[Soothmark tx] accepted/confirmed");
       soothmarkDebug("[Soothmark flow] tx accepted");
@@ -774,7 +698,9 @@ export function AuditInputPreview() {
       soothmarkDebug("[Soothmark error] raw:", caughtError);
       clearTimers("fatal_error");
       setIsFinalizingTimeout(message.includes("still finalizing"));
-      updateActiveSubmissionStatus("error");
+      if (activeSubmissionRef.current) {
+        activeSubmissionRef.current = { ...activeSubmissionRef.current, status: "error" };
+      }
       setPendingMessage("");
       setError(message);
       toast.error(message);

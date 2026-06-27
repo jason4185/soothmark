@@ -19,3 +19,13 @@ export function soothmarkError(...args: unknown[]) {
     console.error(...args);
   }
 }
+
+export function soothmarkTrace(scope: "submit" | "polling" | "dashboard", message: string, value?: unknown) {
+  const label = `[Soothmark ${scope} trace] ${message}`;
+  if (value === undefined) {
+    soothmarkDebug(label);
+    return;
+  }
+
+  soothmarkDebug(label, value);
+}

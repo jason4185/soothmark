@@ -9,7 +9,6 @@ import { SectionShell } from "@/components/shared/SectionShell";
 import { WalletConnectButton } from "@/components/shared/WalletConnectButton";
 import { Button } from "@/components/ui/button";
 import { soothmarkDebug } from "@/lib/debug";
-import { soothmarkContractConfig } from "@/lib/soothmarkContractConfig";
 import { cn } from "@/lib/utils";
 import { isSoothmarkRateLimitError, soothmarkClient } from "@/lib/soothmarkClient";
 import { useWalletIdentity } from "@/lib/wallet/useWalletIdentity";
@@ -22,10 +21,6 @@ type OwnedAudit = {
 };
 
 type DashboardFilter = "all" | AuditClassification;
-type DashboardCacheEntry = {
-  audits: OwnedAudit[];
-  updatedAt: Date;
-};
 
 const filters: Array<{ label: string; value: DashboardFilter }> = [
   { label: "All", value: "all" },
@@ -33,12 +28,6 @@ const filters: Array<{ label: string; value: DashboardFilter }> = [
   { label: "Conditional", value: "conditional" },
   { label: "Rejected", value: "rejected" },
 ];
-const dashboardCache = new Map<string, DashboardCacheEntry>();
-const dashboardCacheTtlMs = 60_000;
-
-function getDashboardCacheKey(walletAddress: string) {
-  return `${soothmarkContractConfig.address.toLowerCase()}:${walletAddress.toLowerCase()}`;
-}
 
 export default function DashboardPage() {
   const wallet = useWalletIdentity();
@@ -68,27 +57,9 @@ export default function DashboardPage() {
       setError(undefined);
       setAudits([]);
       try {
-        const cacheKey = getDashboardCacheKey(connectedWalletAddress);
-        const cached = dashboardCache.get(cacheKey);
-        if (cached && refreshNonce === 0 && Date.now() - cached.updatedAt.getTime() < dashboardCacheTtlMs) {
-          soothmarkDebug("[Dashboard RPC] refresh finished", {
-            source: "cache",
-            auditRecords: cached.audits.length,
-            updatedAt: cached.updatedAt.toISOString(),
-          });
-          setAudits(cached.audits);
-          setLastUpdatedAt(cached.updatedAt);
-          setIsLoading(false);
-          return;
-        }
-
         const walletAudits = await soothmarkClient.getMyAudits(connectedWalletAddress);
         if (active) {
           const updatedAt = new Date();
-          dashboardCache.set(cacheKey, {
-            audits: walletAudits,
-            updatedAt,
-          });
           soothmarkDebug("[Dashboard RPC] refresh finished", {
             source: "contract",
             auditRecords: walletAudits.length,
@@ -107,7 +78,7 @@ export default function DashboardPage() {
           setError(
             isSoothmarkRateLimitError(caughtError)
               ? "GenLayer RPC is rate-limiting reads. Your audits may still be processing. Try refreshing again shortly."
-              : "We could not load the latest contract data yet. Try refreshing.",
+              : "Could not load audits from the Soothmark contract. Check your wallet connection and try again.",
           );
         }
       } finally {
@@ -190,6 +161,7 @@ export default function DashboardPage() {
               ? "No audits yet. Submit a GenLayer contract to create your first Soothmark audit."
               : "Try another status filter or submit a new contract audit."
           }
+          onRetry={() => setRefreshNonce((value) => value + 1)}
         />
       </SectionShell>
     </main>

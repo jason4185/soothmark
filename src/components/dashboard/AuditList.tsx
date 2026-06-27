@@ -18,9 +18,10 @@ type AuditListProps = {
   error?: string;
   emptyTitle?: string;
   emptyCopy?: string;
+  onRetry?: () => void;
 };
 
-export function AuditList({ audits, isLoading, error, emptyTitle = "No audits yet", emptyCopy = "No audits yet. Submit a GenLayer contract to create your first Soothmark audit." }: AuditListProps) {
+export function AuditList({ audits, isLoading, error, emptyTitle = "No audits yet", emptyCopy = "No audits yet. Submit a GenLayer contract to create your first Soothmark audit.", onRetry }: AuditListProps) {
   if (isLoading) {
     return (
       <section className="rounded-xl border border-border/90 bg-surface p-6 shadow-[0_16px_44px_rgb(90_70_42_/_0.06)]" aria-live="polite">
@@ -40,9 +41,16 @@ export function AuditList({ audits, isLoading, error, emptyTitle = "No audits ye
   if (error) {
     return (
       <section className="rounded-xl border border-rejected/30 bg-[var(--rejected-soft)] p-6 text-sm text-rejected" role="alert">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="h-4 w-4" />
-          {error}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            {error}
+          </div>
+          {onRetry && (
+            <Button type="button" variant="outline" className="border-rejected/30 bg-surface text-text-main hover:bg-surface-soft" onClick={onRetry}>
+              Retry
+            </Button>
+          )}
         </div>
       </section>
     );
