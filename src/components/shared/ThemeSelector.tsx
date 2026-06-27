@@ -36,8 +36,8 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  const activeTheme = mounted ? theme || "system" : "system";
-  const activeOption = themeOptions.find((option) => option.value === activeTheme) ?? themeOptions[2];
+  const activeTheme = mounted ? theme || "light" : "light";
+  const activeOption = themeOptions.find((option) => option.value === activeTheme) ?? themeOptions[0];
   const ActiveIcon = activeOption.icon;
 
   return (

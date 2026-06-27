@@ -17,6 +17,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var key="theme";var value=window.localStorage.getItem(key);var valid=value==="light"||value==="dark"||value==="system";if(!valid){value="light";window.localStorage.setItem(key,value)}var isDark=value==="dark"||(value==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var root=document.documentElement;root.classList.remove(isDark?"light":"dark");root.classList.add(isDark?"dark":"light");root.style.colorScheme=isDark?"dark":"light"}catch(error){document.documentElement.classList.remove("dark");document.documentElement.classList.add("light");document.documentElement.style.colorScheme="light"}})();`,
+          }}
+        />
+      </head>
       <body>
         <AppProviders>
           <AppShell>{children}</AppShell>

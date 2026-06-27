@@ -11,10 +11,10 @@ type AppProvidersProps = {
 
 export function AppProviders({ children }: AppProvidersProps) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider attribute="class" storageKey="theme" defaultTheme="light" enableSystem={true} disableTransitionOnChange>
       <WalletProvider>
         {children}
-        <Toaster richColors theme="system" />
+        <Toaster richColors theme="light" />
       </WalletProvider>
     </ThemeProvider>
   );

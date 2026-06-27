@@ -73,10 +73,6 @@ function readActiveSubmission(currentWalletAddress?: string | null): ActiveAudit
     const storedWalletAddress = typeof parsed.walletAddress === "string" ? parsed.walletAddress : undefined;
     const normalizedCurrentAddress = normalizeWalletAddress(currentWalletAddress);
     const normalizedStoredAddress = normalizeWalletAddress(storedWalletAddress);
-    if (normalizedStoredAddress && !normalizedCurrentAddress && currentWalletAddress !== undefined) {
-      clearActiveSubmission();
-      return null;
-    }
     if (normalizedCurrentAddress && normalizedStoredAddress && normalizedCurrentAddress !== normalizedStoredAddress) {
       soothmarkDebug("[Soothmark result] hidden because owner mismatch:", {
         storedWalletAddress,
@@ -344,6 +340,7 @@ export function AuditInputPreview() {
       clearTimeout(resultPollTimerRef.current);
       resultPollTimerRef.current = null;
       soothmarkDebug("[Soothmark auto] stopped polling because:", reason);
+      soothmarkDebug("[Soothmark flow] polling stopped reason:", reason);
     }
   }
 
@@ -468,6 +465,8 @@ export function AuditInputPreview() {
       let audit: SoothmarkAudit | null = null;
       try {
         audit = await soothmarkClient.getAudit(candidateId);
+        soothmarkDebug("[Soothmark flow] getAudit raw result:", getLastSoothmarkAuditResponseDebug(candidateId));
+        soothmarkDebug("[Soothmark flow] normalized audit:", audit);
         lastReadWasRateLimitedRef.current = false;
       } catch (caughtError) {
         if (isSoothmarkRateLimitError(caughtError)) {
@@ -526,6 +525,7 @@ export function AuditInputPreview() {
     setCurrentStep(progressStepCount - 1);
     setElapsedSeconds(0);
     setIsAuditing(false);
+    soothmarkDebug("[Soothmark flow] audit loaded into UI", { auditId: resolved.auditId, source });
     if (source === "auto") {
       soothmarkDebug("[Soothmark polling] audit loaded automatically");
     }
@@ -556,6 +556,10 @@ export function AuditInputPreview() {
 
     soothmarkDebug("[Soothmark auto] tx accepted, starting resolver");
     soothmarkDebug("[Soothmark polling] started for auditId:", submission.auditId ?? "(unresolved)");
+    soothmarkDebug("[Soothmark flow] polling started", {
+      auditId: submission.auditId ?? "(unresolved)",
+      submissionId: submission.submissionId,
+    });
     updateActiveSubmissionStatus("polling");
     setPendingMessage("Transaction accepted. Soothmark is looking for the new audit report owned by your wallet.");
 
@@ -732,13 +736,19 @@ export function AuditInputPreview() {
       const submissionMeta = getLastSoothmarkSubmissionMeta(nextAuditId);
       const explorerUrl = submissionMeta?.explorerUrl ?? "";
       soothmarkDebug("[Soothmark submit] txHash:", submissionMeta?.transactionHash);
+      soothmarkDebug("[Soothmark flow] tx submitted", {
+        txHash: submissionMeta?.transactionHash,
+        auditId: nextAuditId,
+      });
 
       soothmarkDebug("[Soothmark submit] previous auditId:", previousAuditId);
       soothmarkDebug("[Soothmark submit] active auditId:", nextAuditId);
       soothmarkDebug("[Soothmark submit] interpreted auditId:", nextAuditId);
+      soothmarkDebug("[Soothmark flow] resolved auditId:", nextAuditId);
       soothmarkDebug("[Soothmark submit] transaction explorer:", explorerUrl);
       setAuditId(nextAuditId);
       activeAuditIdRef.current = nextAuditId;
+      soothmarkDebug("[Soothmark flow] activeAuditId set:", nextAuditId);
       setTransactionExplorerUrl(explorerUrl);
       const activeSubmission: ActiveAuditSubmission = {
         submissionId,
@@ -754,6 +764,7 @@ export function AuditInputPreview() {
       writeActiveSubmission(activeSubmission);
       soothmarkDebug("[Soothmark tx] auditId:", nextAuditId);
       soothmarkDebug("[Soothmark tx] accepted/confirmed");
+      soothmarkDebug("[Soothmark flow] tx accepted");
       setPendingMessage("Transaction accepted. Soothmark is looking for the new audit report owned by your wallet.");
       setCurrentStep(2);
       startSubmittedAuditPolling(activeSubmission, runId);
