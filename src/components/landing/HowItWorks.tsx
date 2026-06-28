@@ -35,7 +35,7 @@ export function HowItWorks() {
     <SectionShell
       eyebrow="Audit path"
       title="A focused audit model for intelligent contracts."
-      description="Soothmark reviews the exact path where nondeterministic logic can influence saved contract state."
+      description="Soothmark traces one critical path: intent → nondeterminism → state impact → validation/equivalence → result."
     >
       <Reveal>
         <div className="consensus-trace mb-7 overflow-hidden rounded-lg border border-border/80 bg-surface px-4 py-3 text-center text-sm text-text-muted shadow-[0_16px_44px_rgb(90_70_42_/_0.08)]">

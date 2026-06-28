@@ -75,7 +75,7 @@ export function AppNavbar() {
               <SheetTitle className="text-text-main">
                 <Logo />
               </SheetTitle>
-              <SheetDescription className="text-text-muted">GenLayer-native nondeterministic state safety checks.</SheetDescription>
+              <SheetDescription className="text-text-muted">Validation/equivalence checks for GenLayer builders.</SheetDescription>
             </SheetHeader>
             <div className="mt-8 grid gap-2">
               {navLinks.map((link) => {

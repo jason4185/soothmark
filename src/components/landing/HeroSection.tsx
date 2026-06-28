@@ -34,14 +34,14 @@ export function HeroSection() {
           transition={{ duration: 0.44, ease: "easeOut" }}
           className="mt-5 max-w-5xl text-balance text-4xl font-semibold leading-[1.08] tracking-normal text-text-main sm:text-5xl lg:text-[3.35rem]"
         >
-          Audit GenLayer contracts for safe nondeterministic state updates.
+          Audit GenLayer contracts before outside data affects on-chain data.
         </motion.h1>
         <motion.p
           variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
           transition={{ duration: 0.44, ease: "easeOut" }}
           className="mt-5 max-w-2xl text-base leading-7 text-text-muted sm:text-lg sm:leading-8"
         >
-          Soothmark audits intelligent contracts to verify that nondeterministic logic is validated before it can affect saved state.
+          Soothmark is a GenLayer-native intelligent contract auditor that checks whether contract code uses the right validation/equivalence mechanism before AI, web data, API results, or rendered page content can affect on-chain contract data.
         </motion.p>
         <motion.div
           variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
@@ -75,7 +75,7 @@ export function HeroSection() {
                 <p className="text-[0.68rem] uppercase tracking-[0.2em] text-text-muted">Audit preview</p>
                 <div className="mt-1 flex items-center gap-2">
                   <IconTile icon={<ClipboardCheck />} size="sm" tone="primary" />
-                  <p className="text-sm font-medium text-text-main">State safety certification</p>
+                  <p className="text-sm font-medium text-text-main">Validation/equivalence audit</p>
                 </div>
               </div>
               <ClassificationBadge classification="certified" className="soft-certified-pulse" />

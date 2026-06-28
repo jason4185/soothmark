@@ -28,7 +28,7 @@ const mechanisms = [
 
 const exclusions = [
   "General smart-contract security",
-  "Storage design unrelated to nondeterministic state safety",
+  "Storage design unrelated to outside-data validation/equivalence",
   "Frontend or app completeness",
   "Dependency formatting",
   "Public method completeness",
@@ -49,22 +49,22 @@ self.update_count = self.update_count + u256(1)`;
 export default function AboutPage() {
   return (
     <main className="min-h-screen">
-      <SectionShell className="pt-8" eyebrow="Scope" title="What Soothmark Checks" description="Soothmark audits GenLayer intelligent contracts to verify that nondeterministic logic is protected by the right validation or equivalence mechanism before it can change saved state.">
+      <SectionShell className="pt-8" eyebrow="Scope" title="What Soothmark Checks" description="Soothmark is a GenLayer-native intelligent contract auditor that checks whether contract code uses the right validation/equivalence mechanism before AI, web data, API results, or rendered page content can affect on-chain contract data.">
         <div className="rounded-xl border border-border/80 bg-surface p-5 text-sm leading-6 text-text-muted shadow-[0_16px_44px_rgb(90_70_42_/_0.06)]">
-          Soothmark is not a general smart-contract security scanner. It focuses on one critical path: intent, nondeterminism, state impact, and verification.
+          Soothmark helps GenLayer builders check if outside data is properly validated before it changes what their contract stores.
         </div>
       </SectionShell>
 
       <SectionShell
         eyebrow="Core path"
         title="The Soothmark audit path."
-        description="Every report follows the same focused review path: identify intent, detect nondeterminism, trace state impact, and verify the protection mechanism."
+        description="Soothmark traces one critical path: intent → nondeterminism → state impact → validation/equivalence → result."
       >
         <CheckPath />
         <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatusCard icon={<Crosshair />} title="Intent" description="Soothmark identifies what the submitted contract is trying to do." />
           <StatusCard icon={<Waves />} title="Nondeterminism" description="Soothmark detects executable logic that may produce different results across validators, such as web calls, rendered pages, AI prompts, and external unpredictable inputs." />
-          <StatusCard icon={<Database />} title="State impact" description="Soothmark checks whether nondeterministic output can affect persistent contract state." />
+          <StatusCard icon={<Database />} title="State impact" description="Soothmark checks whether nondeterministic output can affect on-chain contract data." />
           <StatusCard icon={<GitCompareArrows />} iconTone="primary" title="Verification Check" description="Soothmark checks whether the exact nondeterministic state-changing path is protected by the correct GenLayer validation or equivalence mechanism." />
         </div>
       </SectionShell>
@@ -88,13 +88,13 @@ export default function AboutPage() {
         </div>
       </SectionShell>
 
-      <SectionShell eyebrow="State impact" title="What Counts as State Impact" description="State impact means nondeterministic output can affect persistent contract state.">
+      <SectionShell eyebrow="State impact" title="What Counts as State Impact" description="State impact means nondeterministic output can affect on-chain contract data.">
         <div className="grid gap-5 lg:grid-cols-2">
           <ScopeCard title="Unsafe nondeterministic state impact">
             <pre className="overflow-x-auto rounded-lg border border-[#1F2937] bg-[#0B1020] p-4 font-mono text-xs leading-6 text-[#CBD5E1]">
               <code>{unsafeExample}</code>
             </pre>
-            <p className="mt-4">This has state impact because external web output is saved into contract state.</p>
+            <p className="mt-4">This has state impact because external web output changes what the contract stores.</p>
           </ScopeCard>
           <ScopeCard title="Safe deterministic state writing">
             <pre className="overflow-x-auto rounded-lg border border-[#1F2937] bg-[#0B1020] p-4 font-mono text-xs leading-6 text-[#CBD5E1]">
@@ -118,7 +118,7 @@ export default function AboutPage() {
           </ScopeCard>
           <ScopeCard title="Path coverage matters">
             <p>
-              Soothmark does not judge protection by mechanism name alone. A mechanism is properly used only when it protects the same nondeterministic value that can affect persistent state.
+              Soothmark does not judge protection by mechanism name alone. A mechanism is properly used only when it protects the same nondeterministic value that can affect on-chain contract data.
             </p>
             <p className="mt-4">
               Protection may come from run_nondet_unsafe, strict_eq, prompt_comparative, or prompt_non_comparative when applied to the correct state-changing path.
@@ -141,7 +141,7 @@ export default function AboutPage() {
           </div>
           <ScopeCard title="Intentionally narrow">
             <p>
-              Soothmark is intentionally narrow. It certifies one critical GenLayer safety question: does nondeterministic logic get validated before it affects saved state?
+              Soothmark is intentionally narrow. It checks one critical GenLayer question: does contract code use the right validation/equivalence mechanism before outside data affects on-chain contract data?
             </p>
           </ScopeCard>
         </div>
@@ -149,13 +149,13 @@ export default function AboutPage() {
 
       <SectionShell eyebrow="Classification" title="Classification Meaning">
         <div className="grid gap-4 md:grid-cols-3">
-          <StatusCard icon={<BadgeCheck />} iconTone="certified" title="Certified" description="No executable nondeterminism exists, or nondeterministic output does not affect saved state, or the state-changing nondeterministic path is properly protected.">
+          <StatusCard icon={<BadgeCheck />} iconTone="certified" title="Certified" description="No executable nondeterminism exists, or nondeterministic output does not affect on-chain contract data, or the state-changing nondeterministic path is properly protected.">
             <ClassificationBadge classification="certified" />
           </StatusCard>
           <StatusCard icon={<AlertTriangle />} iconTone="conditional" title="Conditional" description="Nondeterministic state impact exists and validation is present, but coverage, validator quality, or equivalence tightness may need improvement.">
             <ClassificationBadge classification="conditional" />
           </StatusCard>
-          <StatusCard icon={<ShieldX />} iconTone="rejected" title="Rejected" description="Nondeterministic output can affect saved state and no appropriate validation or equivalence mechanism protects that path.">
+          <StatusCard icon={<ShieldX />} iconTone="rejected" title="Rejected" description="Nondeterministic output can affect on-chain contract data and no appropriate validation or equivalence mechanism protects that path.">
             <ClassificationBadge classification="rejected" />
           </StatusCard>
         </div>

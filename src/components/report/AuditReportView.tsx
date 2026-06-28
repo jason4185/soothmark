@@ -9,9 +9,9 @@ import { ValidationGateTrail } from "@/components/shared/ValidationGateTrail";
 import { mechanismLabels } from "@/lib/utils";
 
 const verdictCopy: Record<SoothmarkAudit["classification"], string> = {
-  certified: "Passed Soothmark’s nondeterministic state-safety audit.",
+  certified: "Passed Soothmark’s validation/equivalence audit.",
   conditional: "Requires closer review before relying on the validation path.",
-  rejected: "Failed Soothmark’s nondeterministic state-safety audit.",
+  rejected: "Failed Soothmark’s validation/equivalence audit.",
 };
 
 type AuditReportViewProps = {

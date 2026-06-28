@@ -25,7 +25,7 @@ const examples = [
   },
   {
     name: "SafeWebFetcher",
-    description: "Protects a nondeterministic web result before it is saved to contract state.",
+    description: "Protects a nondeterministic web result before it changes contract storage.",
     classification: "certified" as const,
     label: "Certified",
   },
@@ -36,7 +36,7 @@ export function ExamplesPreview() {
     <SectionShell
       eyebrow="Examples"
       title="Representative contracts for Soothmark audit calibration."
-      description="Review sample contracts that demonstrate how Soothmark classifies deterministic logic, unsafe nondeterministic state writes, fake validation mentions, and protected validation paths."
+      description="Review sample contracts that demonstrate how Soothmark classifies deterministic logic, unsafe outside-data state writes, fake validation mentions, and protected validation paths."
     >
       <Reveal className="grid gap-4 md:grid-cols-2">
         {examples.map((example) => (
@@ -69,7 +69,7 @@ export function ExamplesPreview() {
       </Reveal>
       <Reveal delay={0.08}>
         <p className="mt-5 text-sm leading-6 text-text-muted">
-          These examples are scoped to nondeterministic state-safety, not general smart-contract security.
+          Soothmark helps GenLayer builders check if outside data is properly validated before it changes what their contract stores.
         </p>
       </Reveal>
     </SectionShell>

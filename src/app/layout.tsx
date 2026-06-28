@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Soothmark",
-  description: "GenLayer-native certification for nondeterministic contract state safety.",
+  description: "Soothmark helps GenLayer builders check if outside data is properly validated before it changes what their contract stores.",
 };
 
 export default function RootLayout({

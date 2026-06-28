@@ -10,9 +10,9 @@ import { ValidationGateTrail } from "@/components/shared/ValidationGateTrail";
 import { cn, mechanismLabels } from "@/lib/utils";
 
 const verdictCopy: Record<SoothmarkAudit["classification"], string> = {
-  certified: "Passed Soothmark’s nondeterministic state-safety audit.",
+  certified: "Passed Soothmark’s validation/equivalence audit.",
   conditional: "Requires closer review before relying on the validation path.",
-  rejected: "Failed Soothmark’s nondeterministic state-safety audit.",
+  rejected: "Failed Soothmark’s validation/equivalence audit.",
 };
 
 type AuditResultSummaryProps = {
@@ -50,7 +50,7 @@ function mainReason(audit: SoothmarkAudit) {
   }
   return audit.nondeterminism.present
     ? "Soothmark evaluated whether the nondeterministic path is protected before state changes."
-    : "No executable nondeterminism was reported, so a verification check is not required for saved state.";
+    : "No executable nondeterminism was reported, so a verification check is not required for on-chain contract data.";
 }
 
 export function AuditResultSummary({ audit, auditId, className }: AuditResultSummaryProps) {

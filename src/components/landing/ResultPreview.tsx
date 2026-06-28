@@ -19,8 +19,8 @@ export function ResultPreview() {
   return (
     <SectionShell
       eyebrow="Report preview"
-      title="A focused audit report for nondeterministic state-safety review."
-      description="Soothmark reports highlight the exact path from nondeterministic logic to state impact and validation, without adding broad smart-contract scoring."
+      title="A focused audit report for validation/equivalence review."
+      description="Soothmark reports highlight the path from outside data to state impact and the validation/equivalence mechanism that protects it."
     >
       <Reveal className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
         <div className="code-scan-line relative overflow-hidden rounded-xl border border-border/90 bg-surface p-5 shadow-[0_24px_70px_rgb(90_70_42_/_0.1),0_0_34px_rgb(37_99_235_/_0.04)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_24px_80px_rgb(37_99_235_/_0.08)]">

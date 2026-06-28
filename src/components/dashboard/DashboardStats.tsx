@@ -29,7 +29,7 @@ export function DashboardStats({ audits }: DashboardStatsProps) {
       icon: <BadgeCheck />,
       label: "Certified",
       value: countByClassification(audits, "certified"),
-      caption: "Passed Soothmark's state-safety audit.",
+      caption: "Passed Soothmark's validation/equivalence audit.",
       tone: "certified" as const,
     },
     {
@@ -43,7 +43,7 @@ export function DashboardStats({ audits }: DashboardStatsProps) {
       icon: <ShieldX />,
       label: "Rejected",
       value: countByClassification(audits, "rejected"),
-      caption: "Nondeterministic state impact lacks protection.",
+      caption: "Outside-data state impact lacks protection.",
       tone: "rejected" as const,
     },
   ];

@@ -36,7 +36,7 @@ export const mockRejectedAudit: SoothmarkAudit = {
     mechanism: "none",
     properly_used: false,
     evidence: ["No executable strict_eq, run_nondet_unsafe, prompt_comparative, or prompt_non_comparative path is visible."],
-    explanation: "Nondeterministic web output can affect saved state without an appropriate validation/equivalence mechanism.",
+    explanation: "Nondeterministic web output can affect on-chain contract data without an appropriate validation/equivalence mechanism.",
   },
   recommendations: [
     "Wrap the state-changing nondeterministic path with gl.vm.run_nondet_unsafe and a validator function.",
