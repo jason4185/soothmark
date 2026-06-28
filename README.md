@@ -24,7 +24,7 @@ Live workflow:
 4. The audit result is stored in contract state.
 5. The frontend reads the report and wallet-scoped dashboard data back from GenLayer.
 
-The current MVP keeps validator checks lightweight to reduce timeout risk, while the leader performs the full Soothmark audit reasoning.
+The current testnet release keeps validator checks lightweight to reduce timeout risk, while the leader performs the full Soothmark audit reasoning.
 
 ---
 
@@ -181,7 +181,7 @@ Soothmark uses a light-first Luminous Audit Workspace design with clean audit st
 
 ### `gl.vm.run_nondet_unsafe`
 
-Used to run the audit reasoning path through GenLayer's leader/validator model. The leader proposes the structured audit result. The current MVP keeps validator checks lightweight to reduce timeout risk, so validators reject malformed results or invalid classifications while the leader performs the full Soothmark audit reasoning.
+Used to run the audit reasoning path through GenLayer's leader/validator model. The leader proposes the structured audit result. The current testnet release keeps validator checks lightweight to reduce timeout risk, so validators reject malformed results or invalid classifications while the leader performs the full Soothmark audit reasoning.
 
 Soothmark does not use ordinary Python helper logic to decide audit facts. The audit reasoning is intended to happen through GenLayer's nondeterministic execution and validator verification path.
 
