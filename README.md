@@ -1,14 +1,30 @@
 # Soothmark
 
-Soothmark is a GenLayer-native intelligent contract auditor that checks whether nondeterministic logic can safely affect saved contract state.
+Soothmark is a GenLayer-native intelligent contract auditor that verifies whether nondeterministic logic is safely checked before it can affect contract state.
 
-Certify whether GenLayer intelligent contracts safely validate nondeterministic logic before it changes state.
+It helps builders understand whether their GenLayer contracts correctly protect web, AI, rendered-page, or other nondeterministic outputs before those outputs are stored on-chain.
+
+Soothmark follows a narrow audit path: intent, nondeterminism, state impact, validation/equivalence, and result.
 
 ---
 
 ## Live Demo
 
-Live demo: _coming soon_
+[soothmark.xyz](https://soothmark.xyz)
+
+Soothmark is live as a Bradbury testnet demo. The app connects to a deployed GenLayer intelligent contract, lets users submit GenLayer contract code for audit, and reads structured audit reports back from GenLayer contract state.
+
+### How the Live Flow Works
+
+Live workflow:
+
+1. A user connects a wallet.
+2. The user submits GenLayer contract code for audit.
+3. The Soothmark intelligent contract runs the audit through GenLayer's leader/validator workflow.
+4. The audit result is stored in contract state.
+5. The frontend reads the report and wallet-scoped dashboard data back from GenLayer.
+
+The current MVP keeps validator checks lightweight to reduce timeout risk, while the leader performs the full Soothmark audit reasoning.
 
 ---
 
@@ -44,16 +60,18 @@ Intent -> Nondeterminism -> State Impact -> Verification Check -> Result
 
 ## Current App Status
 
-Soothmark currently has a working end-to-end audit flow: a user can connect a wallet, submit a GenLayer contract, wait for the on-chain audit result, open the structured report, and review wallet-scoped audit history from the dashboard.
+Soothmark is live at [soothmark.xyz](https://soothmark.xyz) with a working end-to-end Bradbury testnet audit flow: a user can connect a wallet, submit a GenLayer contract, wait for the accepted transaction flow, open the structured report, and review wallet-scoped audit history from the dashboard.
 
 Current working pieces include:
 
-- frontend audit workspace
+- live deployed app
+- frontend audit workspace with README screenshots
 - wallet connection
-- GenLayer contract submission flow
+- real GenLayer contract interaction
+- GenLayer contract submission flow and accepted transaction handling
 - polling for stored audit reports
 - full audit report page
-- wallet-scoped dashboard
+- wallet-scoped dashboard with owner-indexed reads
 - examples page
 - production build and lint checks
 - Vercel-ready deployment configuration
@@ -151,7 +169,7 @@ The frontend is built with:
 
 ### Wallet-Scoped Audit Retrieval
 
-The dashboard reads audit ownership and loads only audit records associated with the connected wallet.
+Soothmark stores audit reports by audit ID and also tracks audit IDs by owner wallet. The dashboard uses this owner index to load a wallet's audit records without scanning the full global audit count.
 
 ### Production-Oriented UX
 
@@ -163,7 +181,7 @@ Soothmark uses a light-first Luminous Audit Workspace design with clean audit st
 
 ### `gl.vm.run_nondet_unsafe`
 
-Used to run the audit reasoning path through GenLayer's leader/validator model. The leader proposes the structured audit result, and validators check whether the result is supported by the submitted contract and the Soothmark rulebook.
+Used to run the audit reasoning path through GenLayer's leader/validator model. The leader proposes the structured audit result. The current MVP keeps validator checks lightweight to reduce timeout risk, so validators reject malformed results or invalid classifications while the leader performs the full Soothmark audit reasoning.
 
 Soothmark does not use ordinary Python helper logic to decide audit facts. The audit reasoning is intended to happen through GenLayer's nondeterministic execution and validator verification path.
 
@@ -177,8 +195,9 @@ Used for persistent contract storage:
 
 - audit ID -> audit report JSON
 - audit ID -> owner address
+- owner wallet -> audit ID list
 
-This keeps audit reports retrievable by ID and lets the frontend filter reports by connected wallet.
+This keeps audit reports retrievable by ID and lets the frontend load dashboard records through wallet-scoped audit indexing.
 
 ### `u256`
 
@@ -335,13 +354,17 @@ pnpm build
 
 ## Planned Features
 
-### Persistent Developer Storage Improvements
-
-The current backend stores audit reports and ownership by audit ID. A future version may improve storage ergonomics with richer indexing, faster wallet-based retrieval, and cleaner report metadata while keeping the audit path focused.
-
 ### Shareable Audit Reports
 
-A future version may allow users to generate controlled share links for specific audit reports, making it easier to share audit results with teammates, reviewers, or hackathon judges without turning the app into a public global audit explorer.
+A future version may allow users to generate controlled share links for specific audit reports, making it easier to share audit results with teammates, reviewers, or hackathon judges without adding global discovery.
+
+### Stronger Validator Verification Mode
+
+A future version may add a stricter validator mode for deeper equivalence checks once timeout behavior is better characterized.
+
+### Richer Report Metadata
+
+Future reports may include cleaner metadata, stronger contract-size guidance, and better audit comparison examples while keeping the core audit path focused.
 
 ---
 
