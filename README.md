@@ -192,37 +192,41 @@ Audit reports are stored as JSON strings so the frontend can retrieve, normalize
 
 ## UI Tour
 
-Real screenshots will be added later. The placeholders below reserve the intended README structure.
-
 ### 1. Landing Page
 
-![Soothmark landing page placeholder](./docs/images/landing.png)
+![Soothmark landing page](./docs/images/landing.png)
 
 The landing page introduces Soothmark's focused audit scope and gives users a clear place to start an audit.
 
 ### 2. Audit Workspace
 
-![Soothmark audit workspace placeholder](./docs/images/audit-workspace.png)
+![Soothmark audit workspace](./docs/images/audit-workspace.png)
 
 Users paste or load a GenLayer contract, connect their wallet, and submit the contract for an on-chain audit.
 
 ### 3. Audit In Progress
 
-![Soothmark audit progress placeholder](./docs/images/audit-progress.png)
+![Soothmark audit progress](./docs/images/audit-progress.png)
 
 After submission, Soothmark tracks the transaction and waits for the audit report to become available from the contract.
 
 ### 4. Audit Report
 
-![Soothmark audit report placeholder](./docs/images/audit-report.png)
+![Soothmark audit report](./docs/images/audit-report.png)
 
 The report shows the audit result, verdict, intent, nondeterminism, state impact, Verification Check, recommendations, and optional raw JSON.
 
 ### 5. Dashboard
 
-![Soothmark dashboard placeholder](./docs/images/dashboard.png)
+![Soothmark dashboard](./docs/images/dashboard.png)
 
 The dashboard gives users a wallet-scoped history of their own audits and lets them reopen individual reports.
+
+### 6. Examples
+
+![Soothmark examples page](./docs/images/examples.png)
+
+The examples page gives users focused GenLayer contract samples for testing Soothmark's audit path.
 
 ---
 
@@ -350,4 +354,3 @@ Soothmark is an early GenLayer-native audit workspace focused on nondeterministi
 ## License
 
 License to be added.
-
