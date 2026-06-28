@@ -371,9 +371,17 @@ async function readSoothmarkContract(functionName: string, args: CalldataEncodab
   }
 
   logContractReadStarted(functionName, args);
+  const address = requireSoothmarkContractAddress();
+  soothmarkDebug("[Soothmark contract config] call:", {
+    contractAddress: address,
+    chain: soothmarkContractConfig.chainName,
+    rpcEndpoint: soothmarkContractConfig.endpoint,
+    receiptStatus: soothmarkContractConfig.receiptStatus,
+    method: functionName,
+  });
   const readPromise = createReadClient()
     .readContract({
-      address: requireSoothmarkContractAddress(),
+      address,
       functionName,
       args,
     })

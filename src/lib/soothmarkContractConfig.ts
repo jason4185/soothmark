@@ -1,9 +1,12 @@
 import { localnet, studionet, testnetAsimov, testnetBradbury } from "genlayer-js/chains";
 import type { Address } from "viem";
 
+export const GENLAYER_BRADBURY_GENLAYER_RPC = "https://rpc-bradbury.genlayer.com";
+export const GENLAYER_BRADBURY_CHAIN_RPC = "https://rpc.testnet-chain.genlayer.com";
+
 export const SOOTHMARK_CONTRACT_ADDRESS =
   (process.env.NEXT_PUBLIC_SOOTHMARK_CONTRACT_ADDRESS?.trim() ||
-    "0xcd549621b4684086983E8639917D77ed39240CF4") as Address;
+    "0x988D615A991682522316de781584e1dC8439b961") as Address;
 
 export const GENLAYER_BRADBURY = {
   id: 4221,
@@ -15,10 +18,10 @@ export const GENLAYER_BRADBURY = {
   },
   rpcUrls: {
     default: {
-      http: ["https://rpc-bradbury.genlayer.com"],
+      http: [GENLAYER_BRADBURY_CHAIN_RPC],
     },
     public: {
-      http: ["https://rpc-bradbury.genlayer.com"],
+      http: [GENLAYER_BRADBURY_CHAIN_RPC],
     },
   },
   blockExplorers: {
@@ -45,7 +48,7 @@ export type SoothmarkChainName = keyof typeof chainMap;
 export const soothmarkContractConfig = {
   address: SOOTHMARK_CONTRACT_ADDRESS,
   chainName: (process.env.NEXT_PUBLIC_SOOTHMARK_CHAIN?.trim() || "testnetBradbury") as SoothmarkChainName,
-  endpoint: process.env.NEXT_PUBLIC_SOOTHMARK_RPC_ENDPOINT?.trim() || "https://rpc-bradbury.genlayer.com",
+  endpoint: process.env.NEXT_PUBLIC_SOOTHMARK_RPC_ENDPOINT?.trim() || GENLAYER_BRADBURY_GENLAYER_RPC,
   explorerUrl: process.env.NEXT_PUBLIC_GENLAYER_EXPLORER_URL?.trim() || GENLAYER_BRADBURY.blockExplorers.default.url,
   useMocks: process.env.NEXT_PUBLIC_SOOTHMARK_USE_MOCKS === "true",
   enableGlobalAuditScan: process.env.NEXT_PUBLIC_SOOTHMARK_ENABLE_GLOBAL_AUDIT_SCAN === "true",
