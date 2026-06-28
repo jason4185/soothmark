@@ -288,6 +288,77 @@ export function AuditInputPreview() {
       return null;
     }
 
+    try {
+      soothmarkDebug("[Soothmark resolve] indexed read start:", { walletAtSubmit: submission.walletAddress, source });
+      const indexedAuditIds = await soothmarkClient.getAuditIdsByOwner(submission.walletAddress ?? "");
+      lastReadWasRateLimitedRef.current = false;
+      const candidateIds = indexedAuditIds.filter((candidateId) => {
+        const numericAuditId = Number(candidateId);
+        return Number.isInteger(numericAuditId) && numericAuditId >= submission.preSubmitAuditCount;
+      });
+
+      if (submission.auditId && !candidateIds.includes(submission.auditId)) {
+        const numericAuditId = Number(submission.auditId);
+        if (Number.isInteger(numericAuditId) && numericAuditId >= submission.preSubmitAuditCount) {
+          candidateIds.unshift(submission.auditId);
+        }
+      }
+
+      soothmarkDebug("[Soothmark resolve] indexed candidate IDs:", candidateIds);
+      for (const candidateId of candidateIds) {
+        let audit: SoothmarkAudit | null = null;
+        try {
+          soothmarkTrace("polling", "getAudit start", { auditId: candidateId, source: `${source}_owner_index` });
+          audit = await soothmarkClient.getAudit(candidateId);
+          soothmarkDebug("[Soothmark flow] getAudit raw result:", getLastSoothmarkAuditResponseDebug(candidateId));
+          soothmarkDebug("[Soothmark flow] normalized audit:", audit);
+          lastReadWasRateLimitedRef.current = false;
+        } catch (caughtError) {
+          if (isSoothmarkRateLimitError(caughtError)) {
+            lastReadWasRateLimitedRef.current = true;
+            const message = "GenLayer RPC is busy. Soothmark will check again shortly.";
+            soothmarkDebug("[Soothmark read] rate limited:", { candidateId, source, error: caughtError });
+            setPendingMessage(message);
+            setError("");
+            return null;
+          }
+          throw caughtError;
+        }
+
+        const rawDebug = getLastSoothmarkAuditResponseDebug(candidateId);
+        if (audit) {
+          soothmarkDebug("[Soothmark resolve] loaded matching indexed auditId:", candidateId);
+          soothmarkTrace("polling", "audit loaded", { auditId: candidateId, source: `${source}_owner_index` });
+          return { auditId: candidateId, audit };
+        }
+        if (rawDebug?.jsonParseFailed || rawDebug?.schemaValidationFailed) {
+          const message = rawDebug.jsonParseFailed
+            ? "Audit report was returned, but could not be parsed."
+            : "Audit report does not match the expected Soothmark schema.";
+          soothmarkDebug("[Soothmark error] reason:", message);
+          soothmarkDebug("[Soothmark error] raw:", rawDebug);
+          activeSubmissionRef.current = { ...submission, status: "error" };
+          setError(message);
+          setPendingMessage("");
+          setIsAuditing(false);
+          return null;
+        }
+      }
+
+      setPendingMessage("Soothmark is checking the contract for your new audit record.");
+      return null;
+    } catch (caughtError) {
+      if (isSoothmarkRateLimitError(caughtError)) {
+        lastReadWasRateLimitedRef.current = true;
+        const message = "GenLayer RPC is busy. Soothmark will check again shortly.";
+        soothmarkDebug("[Soothmark read] rate limited:", { source, error: caughtError });
+        setPendingMessage(message);
+        setError("");
+        return null;
+      }
+      soothmarkDebug("[Soothmark resolve] owner-index lookup failed; falling back to count/owner scan.", caughtError);
+    }
+
     let currentAuditCount = 0;
     try {
       currentAuditCount = await soothmarkClient.getAuditCount();

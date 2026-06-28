@@ -312,9 +312,10 @@ function parseAuditIdsByOwner(rawValue: unknown, depth = 0): string[] {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed
-      .map((item) => String(item))
-      .filter((item) => item.trim() !== "");
+    return sortAuditIdsNewestFirst(Array.from(new Set(parsed
+      .filter((item) => typeof item === "string" || typeof item === "number")
+      .map((item) => String(item).trim())
+      .filter((item) => item !== ""))));
   } catch (error) {
     soothmarkWarn("Could not parse Soothmark owner audit index.", { rawValue, error });
     return [];
@@ -764,6 +765,8 @@ const realClient = {
     try {
       const result = await readSoothmarkContract("get_audit_ids_by_owner", [owner]);
       const normalized = parseAuditIdsByOwner(result);
+      logDashboardRpc("[Soothmark dashboard] raw get_audit_ids_by_owner result", { owner, raw: result });
+      logDashboardRpc("[Soothmark dashboard] parsed get_audit_ids_by_owner result", { owner, auditIds: normalized });
       logContractRead("get_audit_ids_by_owner", [owner], result, normalized);
       return normalized;
     } catch (error) {
@@ -771,7 +774,7 @@ const realClient = {
         throw error;
       }
       soothmarkError(`Could not load Soothmark audit IDs for ${owner}.`, error);
-      return [];
+      throw error;
     }
   },
 
@@ -779,6 +782,8 @@ const realClient = {
     try {
       const result = await readSoothmarkContract("get_my_audit_ids", []);
       const normalized = parseAuditIdsByOwner(result);
+      logDashboardRpc("[Soothmark dashboard] raw get_my_audit_ids result", result);
+      logDashboardRpc("[Soothmark dashboard] parsed get_my_audit_ids result", normalized);
       logContractRead("get_my_audit_ids", [], result, normalized);
       return normalized;
     } catch (error) {
@@ -786,7 +791,7 @@ const realClient = {
         throw error;
       }
       soothmarkError("Could not load Soothmark audit IDs for the connected wallet.", error);
-      return [];
+      throw error;
     }
   },
 
@@ -799,6 +804,60 @@ const realClient = {
     logDashboardRpc("[Soothmark dashboard] wallet address", walletAddress);
     soothmarkTrace("dashboard", "connected wallet", walletAddress);
     soothmarkTrace("dashboard", "contract address", soothmarkContractConfig.address);
+    logDashboardRpc("[Soothmark dashboard] indexed read start", { walletAddress });
+    soothmarkTrace("dashboard", "indexed read start", { walletAddress });
+
+    try {
+      const auditIds = await realClient.getAuditIdsByOwner(walletAddress);
+      soothmarkTrace("dashboard", "parsed indexed audit IDs", { walletAddress, auditIds });
+
+      const ownedAudits: OwnedAudit[] = [];
+      for (const auditId of auditIds) {
+        if (!/^\d+$/.test(auditId)) {
+          logDashboardRpc("[Soothmark dashboard] skipped invalid indexed auditId", auditId);
+          continue;
+        }
+
+        logDashboardRpc("[Soothmark dashboard] getAudit start", { auditId });
+        soothmarkTrace("dashboard", "getAudit start", { auditId, source: "owner_index" });
+        try {
+          const auditResult = await readSoothmarkContract("get_audit", [auditId]);
+          soothmarkTrace("dashboard", "getAudit raw result", {
+            auditId,
+            raw: auditResult,
+          });
+          const audit = normalizeAuditResponse(auditResult, auditId);
+          logContractRead("get_audit", [auditId], auditResult, audit);
+          logDashboardRpc("[Soothmark dashboard] getAudit result", { auditId, loaded: Boolean(audit) });
+          soothmarkTrace("dashboard", "normalized dashboard audit", {
+            auditId,
+            loaded: Boolean(audit),
+            audit,
+          });
+          if (audit) {
+            ownedAudits.push({ auditId, owner: walletAddress, audit });
+          }
+        } catch (error) {
+          logDashboardRpc("[Soothmark dashboard] read failed", { method: "getAudit", auditId, error });
+          soothmarkTrace("dashboard", "read failed", { method: "getAudit", auditId, error });
+          if (isSoothmarkRateLimitError(error)) {
+            throw error;
+          }
+        }
+      }
+
+      logDashboardRpc("[Soothmark dashboard] final loaded count", ownedAudits.length);
+      soothmarkTrace("dashboard", "final loaded count", ownedAudits.length);
+      return ownedAudits;
+    } catch (error) {
+      logDashboardRpc("[Soothmark dashboard] read failed", { method: "getAuditIdsByOwner", error });
+      soothmarkTrace("dashboard", "read failed", { method: "getAuditIdsByOwner", error });
+      if (!soothmarkContractConfig.enableGlobalAuditScan) {
+        throw error;
+      }
+      soothmarkWarn("Owner-indexed dashboard read failed. Falling back to global audit scan because NEXT_PUBLIC_SOOTHMARK_ENABLE_GLOBAL_AUDIT_SCAN=true.", error);
+    }
+
     logDashboardRpc("[Soothmark dashboard] getAuditCount start");
     soothmarkTrace("dashboard", "getAuditCount start");
 
