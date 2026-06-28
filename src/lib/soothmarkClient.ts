@@ -48,6 +48,15 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function traceSoothmarkRuntimeConfig(scope: "submit" | "dashboard" | "polling") {
+  soothmarkTrace(scope, "contract address", soothmarkContractConfig.address);
+  soothmarkTrace(scope, "chain", soothmarkContractConfig.chainName);
+  soothmarkTrace(scope, "rpc endpoint", soothmarkContractConfig.endpoint);
+  soothmarkTrace(scope, "receipt status", soothmarkContractConfig.receiptStatus);
+  soothmarkTrace(scope, "mocks", soothmarkContractConfig.useMocks);
+  soothmarkTrace(scope, "global scan", soothmarkContractConfig.enableGlobalAuditScan);
+}
+
 function chooseMockAudit(contractCode: string): SoothmarkAudit {
   // Mock-only UI behavior. Real audit judgment comes from the Soothmark contract.
   if (contractCode.includes("FakeValidationMention")) {
@@ -147,6 +156,7 @@ const mockClient = {
 };
 
 function createReadClient() {
+  traceSoothmarkRuntimeConfig("dashboard");
   return createClient({
     chain: getSoothmarkChain(),
     endpoint: soothmarkContractConfig.endpoint,
@@ -184,6 +194,7 @@ async function createWriteClient() {
   }
 
   const account = await getConnectedWalletAddress(provider);
+  traceSoothmarkRuntimeConfig("submit");
   const client = createClient({
     chain: getSoothmarkChain(),
     endpoint: soothmarkContractConfig.endpoint,
@@ -803,7 +814,7 @@ const realClient = {
 
     logDashboardRpc("[Soothmark dashboard] wallet address", walletAddress);
     soothmarkTrace("dashboard", "connected wallet", walletAddress);
-    soothmarkTrace("dashboard", "contract address", soothmarkContractConfig.address);
+    traceSoothmarkRuntimeConfig("dashboard");
     logDashboardRpc("[Soothmark dashboard] indexed read start", { walletAddress });
     soothmarkTrace("dashboard", "indexed read start", { walletAddress });
 

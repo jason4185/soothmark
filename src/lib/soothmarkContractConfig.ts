@@ -15,10 +15,10 @@ export const GENLAYER_BRADBURY = {
   },
   rpcUrls: {
     default: {
-      http: ["https://rpc.testnet-chain.genlayer.com"],
+      http: ["https://rpc-bradbury.genlayer.com"],
     },
     public: {
-      http: ["https://rpc.testnet-chain.genlayer.com"],
+      http: ["https://rpc-bradbury.genlayer.com"],
     },
   },
   blockExplorers: {
@@ -28,7 +28,7 @@ export const GENLAYER_BRADBURY = {
     },
     chain: {
       name: "GenLayer Chain Explorer",
-      url: "https://explorer.testnet-chain.genlayer.com",
+      url: "https://explorer-bradbury.genlayer.com",
     },
   },
 } as const;

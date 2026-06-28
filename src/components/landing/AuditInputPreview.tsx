@@ -290,6 +290,12 @@ export function AuditInputPreview() {
 
     try {
       soothmarkDebug("[Soothmark resolve] indexed read start:", { walletAtSubmit: submission.walletAddress, source });
+      soothmarkTrace("polling", "submit post-acceptance indexed lookup start", {
+        contractAddress: soothmarkContractConfig.address,
+        chain: soothmarkContractConfig.chainName,
+        rpcEndpoint: soothmarkContractConfig.endpoint,
+        receiptStatus: soothmarkContractConfig.receiptStatus,
+      });
       const indexedAuditIds = await soothmarkClient.getAuditIdsByOwner(submission.walletAddress ?? "");
       lastReadWasRateLimitedRef.current = false;
       const candidateIds = indexedAuditIds.filter((candidateId) => {
