@@ -14,6 +14,24 @@ Soothmark traces one critical path: intent → nondeterminism → state impact �
 
 Soothmark is live as a Bradbury testnet demo. The app connects to a deployed GenLayer intelligent contract, lets users submit GenLayer contract code for audit, and reads structured audit reports back from GenLayer contract state.
 
+## What Soothmark Checks
+
+Soothmark follows a focused audit rulebook:
+
+1. What is the contract trying to do?
+2. Does it use AI or fetched web data?
+3. Can that result change what the contract stores?
+4. Does the contract use the right validation/equivalence mechanism?
+5. Does that mechanism protect the exact data path that changes contract data?
+
+Soothmark does not treat formatting as validation. For example, `response_format` can structure an AI response, but it does not prove the result was validated.
+
+The result is one of three classifications:
+
+- **Certified** — no risky nondeterministic state path was found, or the path is properly protected.
+- **Conditional** — validation exists, but the coverage is unclear or incomplete.
+- **Rejected** — AI or fetched web data can affect contract storage without the right validation/equivalence mechanism.
+
 ### How the Live Flow Works
 
 Live workflow:
@@ -42,13 +60,7 @@ Soothmark was built to make this review visible, structured, and repeatable.
 
 ## What Soothmark Is
 
-Soothmark is a focused auditor for GenLayer intelligent contracts.
-
-Soothmark is a GenLayer-native intelligent contract auditor that checks whether contract code uses the right validation/equivalence mechanism before AI, web data, API results, or rendered page content can affect on-chain contract data.
-
-Soothmark helps GenLayer builders check if AI or fetched web data is properly validated before it changes what their contract stores.
-
-Soothmark traces one critical path: intent → nondeterminism → state impact → validation/equivalence → result.
+Soothmark is a focused auditor for GenLayer intelligent contracts. It turns the audit path into a structured report that is easy to inspect, compare, and revisit later.
 
 ```text
 Intent -> Nondeterminism -> State Impact -> Verification Check -> Result
@@ -97,29 +109,17 @@ The report shows:
 - recommendations
 - raw audit JSON for technical inspection
 
-Result meanings:
-
-- **Certified:** No unsafe nondeterministic state update was found, or the state-changing nondeterministic path is properly protected.
-- **Conditional:** A validation path exists, but the audit found ambiguity or incomplete certainty.
-- **Rejected:** Nondeterministic output can affect on-chain contract data without visible proper validation/equivalence protection.
-
 ---
 
 ## Key Innovations
 
 ### 1. Validation/Equivalence Focus
 
-Soothmark is focused on one GenLayer-specific safety question:
-
-Does contract code use the right validation/equivalence mechanism before AI, web data, API results, or rendered page content can affect on-chain contract data?
+Soothmark focuses on the GenLayer-specific question of whether nondeterministic state-changing paths are protected by the right validation/equivalence mechanism.
 
 ### 2. GenLayer-Native Audit Path
 
-The audit mirrors the actual GenLayer risk path:
-
-```text
-Intent -> Nondeterminism -> State Impact -> Verification Check -> Result
-```
+The audit mirrors the actual GenLayer risk path rather than producing a generic code review.
 
 ### 3. On-Chain Audit Storage
 
