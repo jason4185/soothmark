@@ -69,7 +69,7 @@ export function ExamplesPreview() {
       </Reveal>
       <Reveal delay={0.08}>
         <p className="mt-5 text-sm leading-6 text-text-muted">
-          Soothmark helps GenLayer builders check if outside data is properly validated before it changes what their contract stores.
+          Soothmark helps GenLayer builders check if AI or fetched web data is properly validated before it changes what their contract stores.
         </p>
       </Reveal>
     </SectionShell>

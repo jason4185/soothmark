@@ -34,7 +34,7 @@ export function HeroSection() {
           transition={{ duration: 0.44, ease: "easeOut" }}
           className="mt-5 max-w-5xl text-balance text-4xl font-semibold leading-[1.08] tracking-normal text-text-main sm:text-5xl lg:text-[3.35rem]"
         >
-          Audit GenLayer contracts before outside data affects on-chain data.
+          Audit GenLayer contracts before AI or fetched web data affects on-chain data.
         </motion.h1>
         <motion.p
           variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}

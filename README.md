@@ -2,7 +2,7 @@
 
 Soothmark is a GenLayer-native intelligent contract auditor that checks whether contract code uses the right validation/equivalence mechanism before AI, web data, API results, or rendered page content can affect on-chain contract data.
 
-Soothmark helps GenLayer builders check if outside data is properly validated before it changes what their contract stores.
+Soothmark helps GenLayer builders check if AI or fetched web data is properly validated before it changes what their contract stores.
 
 Soothmark traces one critical path: intent → nondeterminism → state impact → validation/equivalence → result.
 
@@ -32,7 +32,7 @@ The current testnet release keeps validator checks lightweight to reduce timeout
 
 As a developer building on GenLayer, I saw that intelligent contracts introduce a new kind of risk.
 
-Traditional smart contract review is not enough on its own, because GenLayer contracts can use web data, AI output, rendered pages, and other nondeterministic inputs. The hard question is not only "does this code run?" It is also "can this outside data change on-chain contract data without the right validation or equivalence check?"
+Traditional smart contract review is not enough on its own, because GenLayer contracts can use web data, AI output, rendered pages, and other nondeterministic inputs. The hard question is not only "does this code run?" It is also "can this AI or fetched web data change on-chain contract data without the right validation or equivalence check?"
 
 From my own developer experience, and from conversations with other builders working around GenLayer, it became clear that people needed a focused tool for this exact problem.
 
@@ -46,7 +46,7 @@ Soothmark is a focused auditor for GenLayer intelligent contracts.
 
 Soothmark is a GenLayer-native intelligent contract auditor that checks whether contract code uses the right validation/equivalence mechanism before AI, web data, API results, or rendered page content can affect on-chain contract data.
 
-Soothmark helps GenLayer builders check if outside data is properly validated before it changes what their contract stores.
+Soothmark helps GenLayer builders check if AI or fetched web data is properly validated before it changes what their contract stores.
 
 Soothmark traces one critical path: intent → nondeterminism → state impact → validation/equivalence → result.
 

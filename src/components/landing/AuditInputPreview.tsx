@@ -796,7 +796,7 @@ export function AuditInputPreview() {
       className="py-16"
       eyebrow="Audit workspace"
       title="Submit a GenLayer contract for audit."
-      description="Paste a full GenLayer intelligent contract to check whether outside data is properly validated before it changes what the contract stores."
+      description="Paste a full GenLayer intelligent contract to check whether AI or fetched web data is properly validated before it changes what the contract stores."
     >
       <motion.div
         id="audit"

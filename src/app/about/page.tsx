@@ -51,7 +51,7 @@ export default function AboutPage() {
     <main className="min-h-screen">
       <SectionShell className="pt-8" eyebrow="Scope" title="What Soothmark Checks" description="Soothmark is a GenLayer-native intelligent contract auditor that checks whether contract code uses the right validation/equivalence mechanism before AI, web data, API results, or rendered page content can affect on-chain contract data.">
         <div className="rounded-xl border border-border/80 bg-surface p-5 text-sm leading-6 text-text-muted shadow-[0_16px_44px_rgb(90_70_42_/_0.06)]">
-          Soothmark helps GenLayer builders check if outside data is properly validated before it changes what their contract stores.
+          Soothmark helps GenLayer builders check if AI or fetched web data is properly validated before it changes what their contract stores.
         </div>
       </SectionShell>
 
@@ -141,7 +141,7 @@ export default function AboutPage() {
           </div>
           <ScopeCard title="Intentionally narrow">
             <p>
-              Soothmark is intentionally narrow. It checks one critical GenLayer question: does contract code use the right validation/equivalence mechanism before outside data affects on-chain contract data?
+              Soothmark is intentionally narrow. It checks one critical GenLayer question: does contract code use the right validation/equivalence mechanism before AI or fetched web data affects on-chain contract data?
             </p>
           </ScopeCard>
         </div>
