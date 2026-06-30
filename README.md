@@ -6,23 +6,32 @@ Soothmark helps GenLayer builders check if AI or fetched web data is properly va
 
 Soothmark traces one critical path: intent → nondeterminism → state impact → validation/equivalence → result.
 
+SoothMark follows the public SoothMark Verification Standard.
+
 ---
 
 ## Live Demo
 
-[soothmark.xyz](https://soothmark.xyz)
+- App: [https://soothmark.xyz](https://soothmark.xyz)
+- Network: GenLayer Bradbury testnet
+- Current deployed SoothMark contract:
+  `0x0e69f0897Ce7B49F33B2A2bb510B0774DD3DdA57`
+- Public standard:
+  [https://soothmark-verification-standard.netlify.app/standard.json](https://soothmark-verification-standard.netlify.app/standard.json)
 
-Soothmark is live as a Bradbury testnet demo. The app connects to a deployed GenLayer intelligent contract, lets users submit GenLayer contract code for audit, and reads structured audit reports back from GenLayer contract state.
+Soothmark is live as a Bradbury testnet demo. The app reads and writes audit results through the deployed GenLayer intelligent contract, lets users submit GenLayer contract code for audit, and reads structured audit reports back from GenLayer contract state.
 
 ## What Soothmark Checks
 
-Soothmark follows a focused audit rulebook:
+Soothmark follows the public SoothMark Verification Standard:
 
 1. What is the contract trying to do?
 2. Does it use AI or fetched web data?
 3. Can that result change what the contract stores?
 4. Does the contract use the right validation/equivalence mechanism?
 5. Does that mechanism protect the exact data path that changes contract data?
+
+The standard is public and contract-neutral so the audit criteria can be reviewed independently of any deployed contract address.
 
 Soothmark does not treat formatting as validation. For example, `response_format` can structure an AI response, but it does not prove the result was validated.
 
@@ -38,9 +47,10 @@ Live workflow:
 
 1. A user connects a wallet.
 2. The user submits GenLayer contract code for audit.
-3. The Soothmark intelligent contract runs the audit through GenLayer's leader/validator workflow.
-4. The audit result is stored in contract state.
-5. The frontend reads the report and wallet-scoped dashboard data back from GenLayer.
+3. The SoothMark Intelligent Contract fetches the public SoothMark Verification Standard.
+4. The leader audits the submitted code against that standard.
+5. The result is repaired/shape-checked, lightly validated, and stored in contract state.
+6. The frontend reads the report and wallet-scoped dashboard data back from GenLayer.
 
 The current testnet release keeps validator checks lightweight to reduce timeout risk, while the leader performs the full Soothmark audit reasoning.
 
@@ -56,6 +66,8 @@ From my own developer experience, and from conversations with other builders wor
 
 Soothmark was built to make this review visible, structured, and repeatable.
 
+To make SoothMark transparent, the audit criteria were moved into a public contract-neutral SoothMark Verification Standard. The contract fetches this standard during audit execution, so builders and judges can inspect the criteria being applied.
+
 ---
 
 ## What Soothmark Is
@@ -63,13 +75,13 @@ Soothmark was built to make this review visible, structured, and repeatable.
 Soothmark is a focused auditor for GenLayer intelligent contracts. It turns the audit path into a structured report that is easy to inspect, compare, and revisit later.
 
 ```text
-Intent -> Nondeterminism -> State Impact -> Verification Check -> Result
+Intent -> Nondeterminism -> State Impact -> Validation/Equivalence Check -> Result
 ```
 
 - **Intent:** What the contract is trying to do.
 - **Nondeterminism:** Whether the contract uses AI, web, render, or other unpredictable external inputs.
 - **State Impact:** Whether that nondeterministic output can affect on-chain contract data.
-- **Verification Check:** Whether the correct GenLayer validation/equivalence mechanism protects that path.
+- **Validation/Equivalence Check:** Whether the correct GenLayer validation/equivalence mechanism protects that path.
 - **Result:** Certified, Conditional, or Rejected.
 
 ---
@@ -83,11 +95,17 @@ Current working pieces include:
 - live deployed app
 - frontend audit workspace with README screenshots
 - wallet connection
+- public SoothMark Verification Standard
+- contract-neutral `standard.json`
 - real GenLayer contract interaction
+- compact leader prompt that fetches the public standard
 - GenLayer contract submission flow and accepted transaction handling
 - polling for stored audit reports
 - full audit report page
 - wallet-scoped dashboard with owner-indexed reads
+- wallet-scoped audit ownership
+- owner-indexed audit history
+- deployed Bradbury testnet contract address: `0x0e69f0897Ce7B49F33B2A2bb510B0774DD3DdA57`
 - examples page
 - production build and lint checks
 - Vercel-ready deployment configuration
@@ -121,19 +139,27 @@ Soothmark focuses on the GenLayer-specific question of whether nondeterministic 
 
 The audit mirrors the actual GenLayer risk path rather than producing a generic code review.
 
-### 3. On-Chain Audit Storage
+### 3. Public Verification Standard
+
+SoothMark uses a public, contract-neutral standard hosted as JSON so audit criteria are reviewable and not hidden inside the app.
+
+### 4. Compact On-Chain Audit Prompt
+
+The latest contract keeps only critical guardrails in the leader prompt and relies on the fetched public standard for detailed operational guidance.
+
+### 5. On-Chain Audit Storage
 
 Audit reports are stored through the Soothmark intelligent contract, making each report tied to an audit ID and wallet owner.
 
-### 4. Wallet-Scoped Dashboard
+### 6. Wallet-Scoped Dashboard
 
-Users see their own audit history through wallet ownership filtering, without presenting the app as a public audit explorer.
+Users see their own audit history through wallet ownership filtering. The app does not expose a public or global audit history.
 
-### 5. Structured Machine-Readable Reports
+### 7. Structured Machine-Readable Reports
 
 Reports use a compact JSON schema so results can be read by both humans and tools.
 
-### 6. Focused Certification Language
+### 8. Focused Certification Language
 
 Soothmark avoids fake broad scores and instead returns Certified, Conditional, or Rejected based on the exact validation/equivalence path.
 
@@ -143,11 +169,15 @@ Soothmark avoids fake broad scores and instead returns Certified, Conditional, o
 
 ### GenLayer Intelligent Contract Backend
 
-The Soothmark backend is an intelligent contract that receives submitted contract code and produces a structured audit result.
+The Soothmark backend is an intelligent contract that receives submitted contract code, fetches the public SoothMark Verification Standard with `gl.nondet.web.get`, applies the standard in `gl.nondet.exec_prompt`, and stores structured audit JSON on-chain.
 
 ### Leader and Validator Review
 
-Audit reasoning runs through GenLayer's leader/validator model using nondeterministic execution and validator agreement.
+Audit reasoning runs through GenLayer's leader/validator model using nondeterministic execution and validator agreement. The leader performs full audit reasoning. The validator is intentionally lightweight for the current Bradbury testnet release, and repair logic normalizes malformed booleans and weak validator classifications.
+
+### Public SoothMark Verification Standard
+
+SoothMark's audit criteria are hosted publicly at `https://soothmark-verification-standard.netlify.app/standard.json`. The standard includes scope, classifications, validation mechanism meanings, operational guidance, important rules, and the audit schema. The Intelligent Contract fetches this standard during audit execution and uses it as the source of truth for the leader's audit reasoning.
 
 ### Minimal, Focused Schema
 
@@ -183,9 +213,19 @@ Soothmark uses a light-first Luminous Audit Workspace design with clean audit st
 
 ## GenLayer Methods Used
 
+### `gl.nondet.web.get`
+
+Used inside the leader path to fetch the public SoothMark Verification Standard from:
+
+[https://soothmark-verification-standard.netlify.app/standard.json](https://soothmark-verification-standard.netlify.app/standard.json)
+
+### `gl.nondet.exec_prompt`
+
+Used by the leader to audit the submitted GenLayer contract against the fetched public standard and return structured JSON.
+
 ### `gl.vm.run_nondet_unsafe`
 
-Used to run the audit reasoning path through GenLayer's leader/validator model. The leader proposes the structured audit result. The current testnet release keeps validator checks lightweight to reduce timeout risk, so validators reject malformed results or invalid classifications while the leader performs the full Soothmark audit reasoning.
+Used to run the audit reasoning path through GenLayer's leader/validator model. The leader proposes the structured audit result. For the current Bradbury testnet release, SoothMark keeps validator checks lightweight to reduce timeout risk, while the leader performs the full audit reasoning.
 
 Soothmark does not use ordinary Python helper logic to decide audit facts. The audit reasoning is intended to happen through GenLayer's nondeterministic execution and validator verification path.
 
@@ -237,7 +277,7 @@ After submission, Soothmark tracks the transaction and waits for the audit repor
 
 ![Soothmark audit report](./docs/images/audit-report.png)
 
-The report shows the audit result, verdict, intent, nondeterminism, state impact, Verification Check, recommendations, and optional raw JSON.
+The report shows the audit result, verdict, intent, nondeterminism, state impact, Validation/Equivalence Check, recommendations, and optional raw JSON.
 
 ### 5. Dashboard
 
@@ -295,7 +335,7 @@ Set only frontend-safe `NEXT_PUBLIC_*` values. Do not commit `.env.local`, and d
 
 ```env
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=
-NEXT_PUBLIC_SOOTHMARK_CONTRACT_ADDRESS=
+NEXT_PUBLIC_SOOTHMARK_CONTRACT_ADDRESS=0x0e69f0897Ce7B49F33B2A2bb510B0774DD3DdA57
 NEXT_PUBLIC_SOOTHMARK_CHAIN=testnetBradbury
 NEXT_PUBLIC_SOOTHMARK_RPC_ENDPOINT=https://rpc-bradbury.genlayer.com
 NEXT_PUBLIC_SOOTHMARK_RECEIPT_STATUS=ACCEPTED
@@ -347,6 +387,8 @@ The frontend can be deployed on Vercel from GitHub.
 4. Add the required environment variables.
 5. Deploy.
 
+When redeploying the frontend, update the Vercel environment variable `NEXT_PUBLIC_SOOTHMARK_CONTRACT_ADDRESS` to the latest deployed SoothMark contract address.
+
 Useful verification commands:
 
 ```bash
@@ -364,7 +406,7 @@ A future version may allow users to generate controlled share links for specific
 
 ### Stronger Validator Verification Mode
 
-A future version may add a stricter validator mode for deeper equivalence checks once timeout behavior is better characterized.
+A future version may add a stricter validator mode that performs deeper equivalence checks while keeping the current public standard and wallet-scoped audit flow.
 
 ### Richer Report Metadata
 
@@ -374,7 +416,7 @@ Future reports may include cleaner metadata, stronger contract-size guidance, an
 
 ## Project Status
 
-Soothmark is a current testnet release focused on GenLayer validation/equivalence review for nondeterministic state impact.
+SoothMark is a current Bradbury testnet release using a public contract-neutral verification standard and a deployed GenLayer Intelligent Contract.
 
 ---
 

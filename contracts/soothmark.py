@@ -94,6 +94,7 @@ class Soothmark(gl.Contract):
             "valid values",
             "malformed",
             "score",
+            "score range",
             "0-100",
             "not substantive",
             "does not perform substantive",
@@ -123,6 +124,15 @@ class Soothmark(gl.Contract):
             recommendation = "Strengthen the validator to perform substantive equivalence checking of the audit result against the submitted contract and the SoothMark Verification Standard."
             if recommendation not in audit["recommendations"]:
                 audit["recommendations"].append(recommendation)
+
+        if (
+            classification == "rejected"
+            and mechanism == "run_nondet_unsafe"
+            and has_weak_validator_finding
+        ):
+            audit["classification"] = "conditional"
+            classification = "conditional"
+            audit["validation"]["properly_used"] = False
 
         validation_not_required = (
             audit["nondeterminism"]["present"] is False
@@ -207,49 +217,36 @@ class Soothmark(gl.Contract):
                 verification_standard = "SoothMark Verification Standard unavailable or invalid."
 
             prompt = f"""
-You are the Soothmark leader.
-You are auditing the full submitted GenLayer contract code. Soothmark audits only this path: intent -> nondeterminism -> state impact -> validation/equivalence. Do not perform a broad smart-contract audit. The full submitted contract code is the source of truth. You must read and reason over it directly.
+You are the SoothMark leader.
+
+Audit only this path:
+intent -> nondeterminism -> state impact -> validation/equivalence.
+
+Use the full submitted contract as the source of truth.
+Use the fetched public SoothMark Verification Standard as the source of truth for scope, classifications, validation mechanisms, operational guidance, schema, and recommendations.
+
+Do not perform broad smart-contract security review.
+
+Core guardrails:
+- `response_format` is not validation.
+- State impact exists only when executable nondeterministic output can affect stored state.
+- If `gl.vm.run_nondet_unsafe` wraps the nondeterministic state-changing result, use validation.mechanism = "run_nondet_unsafe".
+- Strong/substantive validator can be certified.
+- Weak validator that only checks shape, schema, classification, allowed values, malformed output, or score range must be conditional, not certified or rejected.
+- If weak validation causes conditional classification, set validation.properly_used = false.
+- No meaningful validation or unrelated validation for nondeterministic state impact should be rejected.
+- Do not recommend adding `run_nondet_unsafe` if it already wraps the result; recommend strengthening the validator instead.
+
+If the public standard is unavailable or invalid, classify conditional and explain.
+
+Return only JSON using exactly this schema:
+{{"classification":"certified|conditional|rejected","intent":"string","nondeterminism":{{"present":true,"evidence":["string"]}},"state_impact":{{"present":true,"evidence":["string"]}},"validation":{{"mechanism":"strict_eq|run_nondet_unsafe|prompt_comparative|prompt_non_comparative|none","properly_used":true,"evidence":["string"],"explanation":"string"}},"recommendations":["string"]}}
+
+Boolean fields must be real JSON true/false only.
+Evidence should quote or name actual executable code lines where possible.
+
 Public SoothMark Verification Standard:
 {verification_standard}
-Use this public standard as the source of truth for scope, classifications, validation mechanism meanings, important rules, audit schema, and recommendations.
-
-Additional operational guidance:
-- Intent means explaining what the submitted contract is trying to do based on its class name, storage fields, public methods, and main write flow. The `intent` field must describe the submitted contract's actual purpose and main state-changing behavior, not the fact that SoothMark is auditing it. Avoid generic intent such as "audit the full submitted contract code" or "audits submitted GenLayer contracts" unless the submitted contract itself is an audit contract. When the submitted contract is SoothMark or another audit contract, the intent must still be specific: mention what kind of contracts it audits, what safety path it checks, what standard or criteria it uses if visible, and what state it stores. For SoothMark, prefer intent like: "Audits submitted GenLayer Intelligent Contracts against the public SoothMark Verification Standard for nondeterministic data usage, state impact, and validation/equivalence safety, then stores wallet-scoped audit results on-chain."
-- Reasoning order: first identify contract intent, then identify executable nondeterministic calls, then ignore random mentions in strings/comments/prompts/schemas/docs/detector lists, then decide whether nondeterministic output can affect saved state, then identify executable validation/equivalence mechanisms, then decide whether the mechanism protects the nondeterministic state-changing path, then choose classification.
-- If the submitted code is clearly incomplete, too short, or lacks a class extending `gl.Contract`, classify the audit as conditional and recommend submitting the full contract. Do not say "provided code snippet" unless the submitted code is actually incomplete.
-- A GenLayer method counts only if it is actually used in executable contract logic.
-- Ignore mentions of GenLayer methods inside strings, comments, prompt instructions, schema examples, detector pattern lists, documentation text, recommendations, or JSON examples.
-- Nested functions, closures, callbacks, helper functions, and inner functions count as executable logic when they are called directly or passed into executable GenLayer mechanisms.
-- If `leader_fn` or `validator_fn` is passed into `gl.vm.run_nondet_unsafe`, the body of that function is executable contract logic.
-- If executable code calls `gl.nondet.exec_prompt`, `gl.nondet.web.get`, `gl.nondet.web.request`, or `gl.nondet.web.render`, then nondeterminism is present.
-- `state_impact.present` must be true only when executable nondeterministic output can affect saved contract state.
-- Do not mark state impact true merely because the contract writes to `self.*` or `TreeMap`; the write must be connected to nondeterministic output.
-- For deterministic contracts that only store user-provided method arguments or deterministic calculations, nondeterminism.present must be false and state_impact.present must be false, even if the contract updates state.
-- For deterministic contracts, validation/equivalence is not required. Use validation.mechanism = "none" and validation.properly_used = true.
-- `response_format` is not validation. It only structures model output and does not prove equivalence or validator safety.
-- If a contract stores `gl.nondet.exec_prompt` output and relies only on `response_format`, validation.mechanism must be "none" and validation.properly_used must be false.
-- If the nondeterministic path is wrapped by `gl.vm.run_nondet_unsafe`, then validation.mechanism should usually be "run_nondet_unsafe", not "none".
-- `run_nondet_unsafe` with a substantive validator can be certified.
-- `run_nondet_unsafe` with a lightweight shape/schema/classification/score-range validator should usually be conditional, not rejected.
-- A validator that only checks score is within 0-100 is lightweight and should not be treated as substantive equivalence validation.
-- A validator that only checks JSON structure, result shape, schema fields, classification field validity, allowed classification values, malformed outputs, or score ranges is lightweight validation only.
-- Do not call shape/schema/classification checking "meaningful validation" or "substantive equivalence validation."
-- If `run_nondet_unsafe` wraps nondeterministic output but the validator only checks JSON structure, shape, schema, classification validity, allowed values, malformed output, or score range, classify the audit as `conditional`, not `certified`.
-- For `run_nondet_unsafe` to be certified, the validator must substantively check the leader result against the submitted contract, a deterministic invariant, the public SoothMark Verification Standard, or an independently derived equivalent result.
-- If the validator does not check the correctness of evidence, reasoning, state-impact analysis, or alignment with the submitted contract and standard, then validation.properly_used must be false.
-- If the classification is conditional because validation exists but is weak, lightweight, shape-only, schema-only, classification-only, score-range-only, unclear, or incomplete, then validation.properly_used must be false.
-- `run_nondet_unsafe` with no meaningful validator or a validator unrelated to the stored result can be rejected.
-- Do not reject a contract merely because `validator_fn` contains nondeterministic GenLayer calls. Validators may independently run nondeterministic logic to check equivalence.
-- Classify as certified only if validation clearly protects the nondeterministic state-changing path.
-- Classify as conditional if validation exists but its coverage, strictness, semantic quality, or correctness is unclear or incomplete.
-- Classify as rejected only if nondeterministic output can affect state and no meaningful validation/equivalence mechanism is visible, or if the visible mechanism clearly does not check the state-changing nondeterministic path.
-- Do not recommend adding `run_nondet_unsafe` if the contract already actually wraps the nondeterministic result in `gl.vm.run_nondet_unsafe`; instead recommend strengthening the validator.
-
-If the Public SoothMark Verification Standard is unavailable or invalid, classify the audit as conditional and explain that the public standard was unavailable or unverifiable.
-Do not audit dependency style, storage architecture, public method completeness, frontend completeness, general error handling, indexing, pagination, dispute flow, unrelated GenLayer methods, or general smart-contract security.
-Return only JSON using exactly this schema: {{"classification":"certified|conditional|rejected","intent":"string","nondeterminism":{{"present":true,"evidence":["string"]}},"state_impact":{{"present":true,"evidence":["string"]}},"validation":{{"mechanism":"strict_eq|run_nondet_unsafe|prompt_comparative|prompt_non_comparative|none","properly_used":true,"evidence":["string"],"explanation":"string"}},"recommendations":["string"]}}.
-Boolean fields must use only JSON true or false. Never use strings such as "true", "false", "yes", "no", "present", "absent", or "unknown".
-Evidence must quote or name actual executable code lines from the submitted contract when possible. Evidence should not quote random strings or prompt instructions unless explaining that they are not executable usage.
 
 Full Submitted Contract:
 {contract_code}

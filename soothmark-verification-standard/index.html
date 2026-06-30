@@ -1,0 +1,115 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>SoothMark Verification Standard</title>
+<style>body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;max-width:940px;margin:40px auto;padding:0 20px 60px;color:#111;background:#fff}h1,h2,h3{line-height:1.25}pre{background:#f4f4f4;border-radius:6px;padding:16px;overflow-x:auto}.meta{color:#555}a{color:#0645ad}</style>
+</head><body>
+<h1>SoothMark Verification Standard</h1>
+<p class='meta'>Version 0.1.0 · public-draft · Contract neutral</p>
+<h2>Purpose</h2><p>A public standard for evaluating nondeterministic data usage in GenLayer Intelligent Contracts before AI outputs, web data, API responses, or rendered page content can affect stored contract state.</p>
+<p>Machine-readable JSON: <a href='./standard.json'>/standard.json</a></p>
+<h2>Scope</h2><h3>Included</h3><ul><li>GenLayer Intelligent Contracts</li>
+<li>nondeterministic AI outputs</li>
+<li>web data</li>
+<li>API responses</li>
+<li>rendered page content</li>
+<li>state-changing usage of nondeterministic data</li>
+<li>validation and equivalence safety</li></ul><h3>Excluded</h3><ul><li>general smart contract vulnerability scanning</li>
+<li>gas optimization</li>
+<li>generic Solidity or EVM bug detection</li>
+<li>frontend security review</li>
+<li>wallet security review</li></ul>
+<h2>Classifications</h2>
+<h3>certified</h3><p>Nondeterministic data that affects state is protected by a suitable validation or equivalence method, or no executable nondeterministic state-changing path exists.</p><ul><li>nondeterministic data is identified and safely handled</li>
+<li>state impact is identified or safely ruled out</li>
+<li>the validation mechanism fits the contract logic</li>
+<li>the protected state transition has clear evidence</li>
+<li>deterministic contracts have no executable nondeterministic state-changing path</li></ul>
+<h3>conditional</h3><p>Some validation exists, but assumptions, boundaries, validator strength, or equivalence conditions are weak or unclear.</p><ul><li>validation exists but is vague, lightweight, or under-specified</li>
+<li>the validator comparison depends on assumptions not enforced by contract logic</li>
+<li>state impact is limited but not fully bounded</li>
+<li>run_nondet_unsafe wraps the nondeterministic result but the validator only checks shape, schema, classification, allowed values, malformed output, or score ranges</li>
+<li>the submitted code is incomplete, too short, or lacks enough context to certify</li></ul>
+<h3>rejected</h3><p>AI, web, API, or rendered data can affect state without proper validation.</p><ul><li>nondeterministic data can change stored state</li>
+<li>no meaningful validation or equivalence method is present</li>
+<li>response formatting is mistaken for validation</li>
+<li>the validation mechanism does not fit the state transition being protected</li>
+<li>run_nondet_unsafe has no meaningful validator, an unrelated validator, or a validator that does not check the stored nondeterministic result</li></ul>
+<h2>Validation mechanisms</h2>
+<h3>strict_eq</h3><p><strong>Meaning:</strong> A strict deterministic equality or field-level equivalence check is used where exact matching is appropriate.</p><p><strong>Best for:</strong></p><ul><li>known deterministic values</li>
+<li>fixed API fields where exact value matching is required</li>
+<li>byte-level comparisons</li>
+<li>normalized exact comparisons</li></ul><p><strong>Risk:</strong> Can be too rigid for semantic AI outputs or rendered content.</p>
+<h3>run_nondet_unsafe</h3><p><strong>Meaning:</strong> A GenLayer mechanism for executing nondeterministic leader logic with a validator function that can check or compare the leader result before it affects state.</p><p><strong>Best for:</strong></p><ul><li>custom equivalence validation</li>
+<li>AI or web-based workflows that need validator review</li>
+<li>cases where strict equality is too rigid</li>
+<li>state-changing nondeterministic logic with a substantive validator</li></ul><p><strong>Risk:</strong> If the validator is missing, unrelated, or only checks shape, schema, classification, allowed values, malformed output, or score ranges, the result should be conditional or rejected depending on whether meaningful validation exists.</p>
+<h3>prompt_comparative</h3><p><strong>Meaning:</strong> A comparative prompt asks validators to compare outputs, evidence, or sources against a clear expected condition or equivalence target.</p><p><strong>Best for:</strong></p><ul><li>semantic equivalence</li>
+<li>AI-generated text</li>
+<li>rendered content</li>
+<li>cases where exact equality is too strict</li></ul><p><strong>Risk:</strong> The comparison must be bounded and specific. Vague comparative prompts may only support a conditional result.</p>
+<h3>prompt_non_comparative</h3><p><strong>Meaning:</strong> A prompt asks for a judgment but does not clearly compare the result against an expected value, reference, invariant, or equivalent source.</p><p><strong>Best for:</strong></p><ul><li>exploratory analysis</li>
+<li>explanation</li>
+<li>advisory use where the result does not directly affect state</li></ul><p><strong>Risk:</strong> Weak protection for state-changing logic. If it controls state updates, it should usually be conditional or rejected.</p>
+<h3>none</h3><p><strong>Meaning:</strong> No meaningful validation or equivalence mechanism is present.</p><p><strong>Best for:</strong></p><ul><li>cases where no nondeterministic data is present</li>
+<li>cases where nondeterministic data cannot affect stored contract state</li></ul><p><strong>Risk:</strong> If nondeterministic data affects state, this should normally lead to rejected.</p>
+<h2>Important rules</h2><ul><li>response_format is not validation. It only structures model output and does not prove equivalence or validator safety.</li>
+<li>Nondeterministic data is highest risk when it can change stored contract state.</li>
+<li>Validation must fit the contract logic and the specific state transition being protected.</li>
+<li>A contract can be conditional when validation exists but assumptions are not sufficiently bounded.</li>
+<li>A contract should be rejected when nondeterministic data can affect state without proper validation.</li>
+<li>Public, reviewable audit criteria are preferred over hidden or hardcoded criteria.</li>
+<li>run_nondet_unsafe is not automatically certified or rejected; the validator quality determines whether the result is certified, conditional, or rejected.</li></ul>
+<h2>Operational guidance</h2>
+<h3>Audit Path</h3><p>SoothMark audits only: intent -&gt; nondeterminism -&gt; state impact -&gt; validation/equivalence. It is not a broad smart-contract security scanner.</p>
+<h3>Source Of Truth</h3><ul><li>The full submitted contract code is the source of truth for the audit.</li>
+<li>The SoothMark Verification Standard is the source of truth for audit scope, classifications, validation mechanism meanings, operational guidance, schema, and recommendations.</li></ul>
+<h3>Intent</h3><ul><li>Intent must describe the submitted contract&#x27;s actual purpose and main state-changing behavior.</li>
+<li>Avoid generic intent such as &#x27;audit the full submitted contract code&#x27;.</li>
+<li>For SoothMark itself, prefer: &#x27;Audits submitted GenLayer Intelligent Contracts against the public SoothMark Verification Standard for nondeterministic data usage, state impact, and validation/equivalence safety, then stores wallet-scoped audit results on-chain.&#x27;</li></ul>
+<h3>Executable Logic</h3><ul><li>Count only executable contract logic.</li>
+<li>Ignore GenLayer method names inside strings, comments, prompts, schemas, detector lists, documentation text, recommendations, and JSON examples.</li>
+<li>Nested functions, closures, callbacks, helper functions, and inner functions count when called directly or passed into executable GenLayer mechanisms.</li>
+<li>If leader_fn or validator_fn is passed into gl.vm.run_nondet_unsafe, the body of that function is executable logic.</li></ul>
+<h3>Nondeterminism</h3><ul><li>Executable calls to gl.nondet.exec_prompt, gl.nondet.web.get, gl.nondet.web.request, or gl.nondet.web.render mean nondeterminism is present.</li></ul>
+<h3>State Impact</h3><ul><li>State impact is true only when executable nondeterministic output can affect stored contract state.</li>
+<li>State writes alone are not enough.</li>
+<li>Deterministic contracts that only store user inputs or deterministic calculations do not require validation.</li></ul>
+<h3>Classification Ladder</h3><ul><li>No executable nondeterminism: usually certified, with validation.mechanism = &#x27;none&#x27; and validation.properly_used = true.</li>
+<li>Nondeterminism exists but cannot affect stored state: certified or conditional depending on clarity.</li>
+<li>Nondeterministic output affects state and no validation/equivalence exists: rejected.</li>
+<li>Nondeterministic output affects state and is wrapped by gl.vm.run_nondet_unsafe: validation.mechanism should usually be &#x27;run_nondet_unsafe&#x27;.</li>
+<li>Strong or substantive validator that checks the leader result against the submitted contract, deterministic invariants, the public standard, or an independently derived equivalent result: certified.</li>
+<li>Weak validator that only checks shape, schema, classification, allowed values, malformed output, or score range: conditional and validation.properly_used = false.</li>
+<li>No meaningful validator, unrelated validator, or validator that does not check the stored nondeterministic result: rejected.</li></ul>
+<h3>Recommendations</h3><ul><li>Do not recommend adding gl.vm.run_nondet_unsafe if it already wraps the nondeterministic result.</li>
+<li>When run_nondet_unsafe already exists but the validator is weak, recommend strengthening the validator instead.</li></ul>
+<h3>Incomplete Code</h3><ul><li>If submitted code is incomplete, too short, or lacks a class extending gl.Contract, classify conditional and recommend submitting the full contract.</li></ul>
+<h3>Evidence</h3><ul><li>Evidence should quote or name actual executable code lines where possible.</li>
+<li>Evidence should not quote random strings or prompt instructions unless explaining that they are not executable usage.</li></ul>
+<h2>Audit schema</h2><pre>{
+  &quot;classification&quot;: &quot;certified | conditional | rejected&quot;,
+  &quot;intent&quot;: &quot;string&quot;,
+  &quot;nondeterminism&quot;: {
+    &quot;present&quot;: &quot;boolean&quot;,
+    &quot;evidence&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;state_impact&quot;: {
+    &quot;present&quot;: &quot;boolean&quot;,
+    &quot;evidence&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;validation&quot;: {
+    &quot;mechanism&quot;: &quot;strict_eq | run_nondet_unsafe | prompt_comparative | prompt_non_comparative | none&quot;,
+    &quot;properly_used&quot;: &quot;boolean&quot;,
+    &quot;evidence&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;explanation&quot;: &quot;string&quot;
+  },
+  &quot;recommendations&quot;: [
+    &quot;string&quot;
+  ]
+}</pre>
+</body></html>
